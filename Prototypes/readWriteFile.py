@@ -1,42 +1,65 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-def read_file(filename):
-    tree = ET.parse(filename)
-    root = tree.getroot()
+class FileWriter:
+    def __init__(self):
+        self.m1_occupied = True
+        self.m2_occupied = True
 
-    ##tag for identifier, text for value, attr for cases like:  <country name="Liechtenstein">
-    for items in root[0]:
-        print(items.tag, ":", items.text)
+    def read_file(self,filename):
+        tree = ET.parse(filename)
+        root = tree.getroot()
 
-def write_action_file(filename,item, source, destination):
-    root = ET.Element("action")
-    child_item =ET.SubElement(root,"item")
-    child_item.text = item
+        ##tag for identifier, text for value, attr for cases like:  <country name="Liechtenstein">
+        for items in root[0]:
+            print(items.tag, ":", items.text)
 
-    child_source = ET.SubElement(root,"source")
-    child_source.text = source
+    def read_state(self,filename):
+        tree = ET.parse(filename)
+        root = tree.getroot()
 
-    child_destination = ET.SubElement(root,"destination")
-    child_destination.text = destination
+        self.m1_occupied = root[0][0].text == "true" #M1,Occupied:
+        self.m2_occupied = root[1][0].text == "true"
+        
+    def write_action_file(self,filename, source):
+        root = ET.Element("action")
 
-    finishedText = format_output(root)
-    myFile = open(filename, "w") #"a" append
-    myFile.write(finishedText)
-    myFile.close()
-    #print(format_output(root))
+        child_source = ET.SubElement(root,"source")
+        child_source.text = source
 
-def write_reward_file(filename):
-    root = ET.Element("reward")
-    child_item =ET.SubElement(root,"StatThroughputPerMinute")
-    child_item.text = "99"
+        child_destination = ET.SubElement(root,"destination")
+        ##very simple version for decison making
+        
+        destination = "XX"
+        
+        if (self.m1_occupied) and (not self.m2_occupied):
+            destination = "M2"
+        elif (not self.m1_occupied) and (self.m2_occupied):
+            destination = "M1"
+        elif (self.m1_occupied) and (self.m2_occupied):
+            destination = "M1"
+        elif (not self.m1_occupied) and (not self.m2_occupied):
+            destination = "M2"
+        
+        child_destination.text = destination
 
-    finishedText = format_output(root)
-    myFile = open(filename, "w") #"a" append
-    myFile.write(finishedText)
-    myFile.close()
+        finishedText = self.format_output(root)
+        myFile = open(filename, "w") #"a" append
+        myFile.write(finishedText)
+        myFile.close()
+        #print(format_output(root))
 
-def format_output(text):
-    rough_string = ET.tostring(text, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
+    def write_reward_file(self,filename):
+        root = ET.Element("reward")
+        child_item =ET.SubElement(root,"StatThroughputPerMinute")
+        child_item.text = "99"
+
+        finishedText = self.format_output(root)
+        myFile = open(filename, "w") #"a" append
+        myFile.write(finishedText)
+        myFile.close()
+
+    def format_output(self,text):
+        rough_string = ET.tostring(text, 'utf-8')
+        reparsed = minidom.parseString(rough_string)
+        return reparsed.toprettyxml(indent="  ")
