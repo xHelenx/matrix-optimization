@@ -28,8 +28,8 @@ class FileWriter:
         child_source.text = source
 
         child_destination = ET.SubElement(root,"destination")
-        ##very simple version for decison making
         
+        ##very simple version for decison making
         destination = "XX"
         
         if (self.m1_occupied) and (not self.m2_occupied):
@@ -41,6 +41,7 @@ class FileWriter:
         elif (not self.m1_occupied) and (not self.m2_occupied):
             destination = "M2"
         
+        print(self.m1_occupied,self.m2_occupied,destination)
         child_destination.text = destination
 
         finishedText = self.format_output(root)

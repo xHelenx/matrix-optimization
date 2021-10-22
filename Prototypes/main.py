@@ -8,11 +8,10 @@ class MyHandler(FileSystemEventHandler):
     #def __init__(self):
     #    self.updated = False
     def on_created(self, event):
-        if event == FileModifiedEvent or DirModifiedEvent:
-            state = "state.xml"
-            file_writer.read_state(state)
-            file_writer.write_action_file("action.xml", "Station0")
-            os.remove(state)
+        state = "state.xml"
+        file_writer.read_state(state)
+        file_writer.write_action_file("action.xml", "Station0")
+        os.remove(state)
     
 
 if __name__ ==  "__main__":
