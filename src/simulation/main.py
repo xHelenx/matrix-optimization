@@ -16,7 +16,7 @@ class MyHandler(FileSystemEventHandler):
             state = "state.xml"
             file_writer.read_state(state)
             os.remove(state)
-            file_writer.write_action_file("action.xml", "Source")
+            file_writer.write_action_file("action", "Source1")
         
     
 

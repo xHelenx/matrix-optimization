@@ -51,7 +51,7 @@ class FileWriter:
         myFile = open(tempfilename, "w") #"a" append
         myFile.write(finishedText)
         myFile.close()
-        os.rename(tempfilename, filename)
+        os.rename(tempfilename, filename + ".xml")
         
 
         #print(format_output(root))
