@@ -4,6 +4,7 @@ from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEvent
 from DataExchanger import DataExchanger
 from globalConstants import MYPATH, EVENT_CONFIG,EVENT_REWARD,EVENT_ACTION, \
     EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print
+
 class FileHandler(FileSystemEventHandler):
     
     def on_created(self, event):

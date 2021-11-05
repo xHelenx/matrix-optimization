@@ -1,8 +1,8 @@
 # set print debug messages
-IS_DEBUG = False
+IS_DEBUG = True
 
 #--- File constants
-MYPATH = r"E:\Bachelorarbeit\\PrototypeForRL\\"
+MYPATH = r"E:\\Bachelorarbeit\\PrototypeForRL\\"
 EVENT_STATE = "state"
 EVENT_ACTION = "action"
 EVENT_REWARD = "reward"

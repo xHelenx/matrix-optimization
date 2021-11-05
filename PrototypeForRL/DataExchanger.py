@@ -49,7 +49,7 @@ class DataExchanger:
                 procstep_dict = {}
                     
             #print(json.dumps(self.workplan[PARTB]["P3"], sort_keys=False, indent=4))
-            print(self.workplan)
+            #print(self.workplan)
             
         elif event == EVENT_STATE:
             for machine in root:
@@ -59,8 +59,10 @@ class DataExchanger:
                     if property.tag == ID_OCCUPIED:
                         if property.text == "true":
                             machine_properties.update({ID_OCCUPIED:True})
-                        else:
+                        elif property.text == "false":
                             machine_properties.update({ID_OCCUPIED:False})
+                        else:
+                            raise ValueError("Unknown value for ID_OCCUPIED")
                     elif property.tag == ID_PARTTYPE:
                         if property.text == NONE:
                             machine_properties.update({ID_PARTTYPE:None})
@@ -77,6 +79,7 @@ class DataExchanger:
                     else:
                         raise ValueError("Unknown property type")
                     self.state.update({machine.tag:machine_properties})
+                    #print(json.dumps(self.state, sort_keys=False, indent=4))
         elif event == EVENT_ACTION:
             pass
         elif event == EVENT_REWARD:
