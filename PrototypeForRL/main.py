@@ -22,7 +22,7 @@ class FileHandler(FileSystemEventHandler):
 
 if __name__ ==  "__main__":
     de = DataExchanger()
-    de.read_file(EVENT_STATE)
+    de.read_file(EVENT_CONFIG)
     while(True):
         pass
 

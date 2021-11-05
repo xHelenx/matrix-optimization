@@ -1,5 +1,5 @@
 # set print debug messages
-IS_DEBUG = True
+IS_DEBUG = False
 
 #--- File constants
 MYPATH = r"E:\Bachelorarbeit\\PrototypeForRL\\"
@@ -20,6 +20,7 @@ NONE = "None"
 ID_OCCUPIED = "occupied"
 ID_PARTTYPE = "parttype"
 ID_REMAININGPROCTIME = "remainingproctime"
+ID_PROCTIME = "procTime"
 
 
 def debug_print(message):

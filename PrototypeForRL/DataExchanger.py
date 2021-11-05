@@ -2,8 +2,9 @@ from abc import abstractproperty
 from typing import Text
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+import json
 
-from globalConstants import MYPATH, EVENT_CONFIG,EVENT_REWARD, \
+from globalConstants import ID_PROCTIME, MYPATH, EVENT_CONFIG,EVENT_REWARD, \
 EVENT_ACTION,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
 ID_PARTTYPE, ID_REMAININGPROCTIME, NONE, PARTA, PARTB, debug_print
 
@@ -16,11 +17,40 @@ class DataExchanger:
         self.reward = 0 #float 
 
     def read_file(self, event):
+        debug_print(event + EXTENSION_XML)
         tree = ET.parse(event + EXTENSION_XML)
         root = tree.getroot()
 
         if event == EVENT_CONFIG:
-            pass
+            #{PartA: {{1:{M1:{M2:10}}}}}
+            property_val = -1
+            dest_dict = {}
+            src_dict = {}
+            procstep_dict = {}
+
+            for part in root:
+                for procstep in part:
+                    for src in procstep:
+                        for dest in src:
+                            for property in dest:
+                                if property.tag == ID_PROCTIME:
+                                    try:
+                                        property_val = float(property.text)
+                                    except:
+                                        raise ValueError("Incorrect datatype for ID_PROCTIME")
+                            dest_dict.update({dest.tag:property_val})
+                            property_val = -1
+                        src_dict.update({src.tag:dest_dict})
+                        dest_dict = {}
+                    procstep_dict.update({procstep.tag:src_dict})
+                    src_dict = {}
+                debug_print({part.tag:procstep_dict})
+                self.workplan.update({part.tag:procstep_dict})
+                procstep_dict = {}
+                    
+            #print(json.dumps(self.workplan[PARTB]["P3"], sort_keys=False, indent=4))
+            print(self.workplan)
+            
         elif event == EVENT_STATE:
             for machine in root:
                 #print(machine.tag)
@@ -51,7 +81,6 @@ class DataExchanger:
             pass
         elif event == EVENT_REWARD:
             pass
-        debug_print(self.state)
         
 
     def format_xml(self,file):
