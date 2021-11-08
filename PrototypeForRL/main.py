@@ -10,12 +10,16 @@ class FileHandler(FileSystemEventHandler):
     def on_created(self, event):
         if   event.src_path == (MYPATH + EVENT_STATE + EXTENSION_XML):
             debug_print("STATE")
+            de.read_file(event)
         elif event.src_path == (MYPATH + EVENT_ACTION + EXTENSION_XML):
             debug_print("ACTION")
+            de.read_file(event)
         elif event.src_path == (MYPATH + EVENT_REWARD + EXTENSION_XML):
             debug_print("REWARD")
+            de.read_file(event)
         elif event.src_path == (MYPATH + EVENT_CONFIG + EXTENSION_XML):
             debug_print("CONFIG")
+            de.read_file(event)
         elif not (event == MYPATH + EVENT_CONFIG + EXTENSION_TEMP or event == MYPATH + EVENT_STATE + EXTENSION_TEMP \
             or event == MYPATH + EVENT_ACTION + EXTENSION_TEMP or event == MYPATH + EVENT_REWARD + EXTENSION_TEMP):
             raise ValueError("Unknown file type created, no event exists to handle this file")
