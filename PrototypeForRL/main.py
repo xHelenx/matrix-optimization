@@ -26,11 +26,15 @@ class FileHandler(FileSystemEventHandler):
     
 
 if __name__ ==  "__main__":
+
+
+    
     de = DataExchanger()
-    de.read_file(EVENT_CONFIG)
-    de.read_file(EVENT_STATE)
-    de.define_action_space()
-    print(de.is_valid_action(("PartA", "M1", "M3")))
+    de.write_action(("PartA","M1", "M3"))
+    #de.read_file(EVENT_CONFIG)
+    #de.read_file(EVENT_STATE)
+    #de.define_action_space()
+    #print(de.is_valid_action(("PartA", "M1", "M3")))
     while(True):
         pass
 

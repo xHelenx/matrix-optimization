@@ -1,8 +1,7 @@
-from abc import abstractproperty
-from typing import Text
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import json
+import os
 
 from globalConstants import ID_PROCTIME, MYPATH, EVENT_CONFIG,EVENT_REWARD, \
 EVENT_ACTION,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
@@ -93,6 +92,35 @@ class DataExchanger:
         #print(json.dumps(self.workplan[PARTB]["P3"], sort_keys=False, indent=4))
         #print(self.workplan)
 
+    def write_action(self, action):
+        '''
+        Writes the action into an xml-formated file. 
+
+        @input action: (parttype, source, destination)
+
+        '''
+        root = ET.Element("action")
+
+        child_parttype = ET.SubElement(root,"parttype")
+        child_parttype.attrib = {"type": "string"}
+        child_parttype.text = action[0]
+        
+        child_source = ET.SubElement(root,"source")
+        child_source.attrib = {"type": "string"}
+        child_source.text = action[1]
+
+        child_destination = ET.SubElement(root,"destination")
+        child_destination.attrib = {"type": "string"}
+        child_destination.text = action[2]
+
+        finishedText = self.format_output(root)
+        myFile = open(EVENT_ACTION + EXTENSION_TEMP, "w") #"a" = append
+        myFile.write(finishedText)
+        myFile.close()
+
+        os.rename(EVENT_ACTION + EXTENSION_TEMP, EVENT_ACTION + EXTENSION_XML)
+
+        
 
         
     def define_action_space(self): #TODO call after config file read
@@ -162,3 +190,8 @@ class DataExchanger:
         rough_string = ET.tostring(root, 'utf-8')
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ")
+
+    def format_output(self,text):
+            rough_string = ET.tostring(text, 'utf-8')
+            reparsed = minidom.parseString(rough_string)
+            return reparsed.toprettyxml(indent="  ")
