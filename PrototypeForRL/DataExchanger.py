@@ -3,8 +3,9 @@ from xml.dom import minidom
 import json
 import os
 
-from globalConstants import ACTIONTYPE_MOVE, ACTIONTYPE_RESET, DEBUG_ACTIONS, DEBUG_FILECREATION, DEBUG_VALID_ACTION, EVENT_MESSAGE, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, MSG_SETUP_DONE, MYPATH, EVENT_CONFIG,EVENT_REWARD, \
-EVENT_ACTION,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
+from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_FILECREATION, \
+DEBUG_VALID_ACTION, EVENT_MESSAGE, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, MYPATH, EVENT_CONFIG,EVENT_REWARD, \
+EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
 ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print
 
 class DataExchanger:
@@ -62,10 +63,8 @@ class DataExchanger:
         self.state = {}
         for state in root:
             for component in state:
-                if component == NODE_IDENTIFIER:
-                    for item in component:
-                        if item == ID_CURRENTID:
-                            self.current_state_id = int(item)
+                if component.tag == NODE_IDENTIFIER:
+                    self.current_state_id = int(component.text)
                 else:
                 #print(machine.tag)
                     machine_properties = {}
@@ -145,68 +144,60 @@ class DataExchanger:
         #print(json.dumps(self.workplan[PARTB]["P3"], sort_keys=False, indent=4))
         #print(self.workplan)
         self.totalMachine = len(self.machines)
-    def write_action(self, action, actiontype):
+    def write_command(self, commandtype, action=(None,None,None)):
         '''
-        Writes the action into an xml-formated file. 
+        Writes a command into an xml-formated file. 
 
         @input action: (parttype, source, destination)
-
+        @input commandtype:
+                    - COMMAND_RESET: simulation shall be reseted
+                    - COMMAND_ACTION_MOVE: a move action, as defined in the action shall be performed
+                    - COMMAND_SETUP_DONE: simulation can start the episode now
         '''
-        root = ET.Element("action")
 
-        child_source = ET.SubElement(root,"actiontype")
-        child_source.attrib = {"type": "string"}
-        if actiontype == ACTIONTYPE_MOVE:
-            child_source.text = ACTIONTYPE_MOVE
-        elif actiontype == ACTIONTYPE_RESET:
-            child_source.text = ACTIONTYPE_RESET
+        root = ET.Element("command")
+        child_command = ET.SubElement(root,"commandtype")
+        child_command.attrib = {"type": "string"}
+        
+        if commandtype == COMMAND_RESET:
+            child_command.text = COMMAND_RESET
+        elif commandtype == COMMAND_SETUP_DONE:
+            child_command.text = COMMAND_SETUP_DONE
+        elif commandtype == COMMAND_TRAINING_DONE:
+            child_command.text = COMMAND_TRAINING_DONE
+        elif commandtype == COMMAND_ACTION_MOVE:
+            child_command.text = COMMAND_ACTION_MOVE
+            child_source = ET.SubElement(root,"source")
+            child_source.attrib = {"type": "string"}
+            child_source.text = action[1]
+
+            child_destination = ET.SubElement(root,"destination")
+            child_destination.attrib = {"type": "string"}
+            child_destination.text = action[2]
+
+            child_parttype = ET.SubElement(root,"parttype")
+            child_parttype.attrib = {"type": "string"}
+            child_parttype.text = action[0]
         else:
-            raise ValueError("Encountered Unknown ACTIONTYPE")
-
-        debug_print(actiontype, DEBUG_ACTIONS)
-        child_source = ET.SubElement(root,"source")
-        child_source.attrib = {"type": "string"}
-        child_source.text = action[1]
-
-        child_destination = ET.SubElement(root,"destination")
-        child_destination.attrib = {"type": "string"}
-        child_destination.text = action[2]
-
-        child_parttype = ET.SubElement(root,"parttype")
-        child_parttype.attrib = {"type": "string"}
-        child_parttype.text = action[0]
+            raise ValueError("Command type does not exist")
+            
+        debug_print(commandtype, DEBUG_COMMAND)
+        
         
         finishedText = self.format_output(root)
-        if os.path.exists(MYPATH + EVENT_ACTION + EXTENSION_TEMP):
-            os.remove(MYPATH + EVENT_ACTION + EXTENSION_TEMP)
+        if os.path.exists(MYPATH + EVENT_COMMAND + EXTENSION_TEMP):
+            os.remove(MYPATH + EVENT_COMMAND + EXTENSION_TEMP)
             
-        myFile = open(MYPATH + EVENT_ACTION + EXTENSION_TEMP, "w") #"a" = append
+        myFile = open(MYPATH + EVENT_COMMAND + EXTENSION_TEMP, "w") #"a" = append
         myFile.write(finishedText)
         myFile.close()
 
-        os.rename(MYPATH + EVENT_ACTION + EXTENSION_TEMP, MYPATH + EVENT_ACTION + EXTENSION_XML)
-        if os.path.exists(MYPATH + EVENT_ACTION + EXTENSION_XML):
-            debug_print(MYPATH + EVENT_ACTION + EXTENSION_XML, DEBUG_FILECREATION)
-
-    def write_message(self):
-        root = ET.Element("message")
-
-        child_msg = ET.SubElement(root,"messagetype")
-        child_msg.attrib = {"type": "string"}
-        child_msg.text = MSG_SETUP_DONE
+        while os.path.exists(MYPATH + EVENT_COMMAND + EXTENSION_XML):
+            pass
         
-        finishedText = self.format_output(root)
-        if os.path.exists(MYPATH + EVENT_MESSAGE + EXTENSION_TEMP):
-            os.remove(MYPATH + EVENT_MESSAGE + EXTENSION_TEMP)
-            
-        myFile = open(MYPATH + EVENT_MESSAGE + EXTENSION_TEMP, "w") #"a" = append
-        myFile.write(finishedText)
-        myFile.close()
-
-        os.rename(MYPATH + EVENT_MESSAGE + EXTENSION_TEMP, MYPATH + EVENT_MESSAGE + EXTENSION_XML)
-        if os.path.exists(MYPATH + EVENT_MESSAGE + EXTENSION_XML):
-            debug_print(MYPATH + EVENT_MESSAGE + EXTENSION_XML, DEBUG_FILECREATION)
-
+        os.rename(MYPATH + EVENT_COMMAND + EXTENSION_TEMP, MYPATH + EVENT_COMMAND + EXTENSION_XML)
+        if os.path.exists(MYPATH + EVENT_COMMAND + EXTENSION_XML):
+            debug_print(MYPATH + EVENT_COMMAND + EXTENSION_XML, DEBUG_FILECREATION)
 
         
     def define_action_space(self): #TODO call after config file read

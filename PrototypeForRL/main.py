@@ -7,7 +7,7 @@ from tensorforce import Agent, Environment
 
 from SPSEnvironemnt import SPSEnvironmnet
 from DataExchanger import DataExchanger
-from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EVENT_MESSAGE, EXTENSION_LOG, LOGFILE, MYPATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
+from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EVENT_MESSAGE, EXTENSION_LOG, LOGFILE, MYPATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
     EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print
 class FileHandler(FileSystemEventHandler):
     
@@ -65,13 +65,10 @@ if __name__ ==  "__main__":
     #agent = Agent.create(agent="ppo", environment=env, batch_size = 10 )
     agent = Agent.create(agent="ppo", environment=env, batch_size = 1)
     print("...done")
-
-    env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
-    
-
     num_updates = 0
 
     for episode in range(2):
+        env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
         states = env.reset() 
         while not env.dataEx.received_state: #wait to receive first state
             pass
@@ -93,7 +90,7 @@ if __name__ ==  "__main__":
         print('Episode {}: return={} updates={}, steps={}'.format(episode, sum_rewards, num_updates,step))
         print("-------------------------------")
         env.dataEx.write_command(commandtype=COMMAND_RESET) #reset SPS
-        
+    env.dataEx.write_command(commandtype=COMMAND_TRAINING_DONE) 
     #print('Mean evaluation return:', sum_rewards / amzahlEpisoden)
 
     # Close agent and env

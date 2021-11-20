@@ -1,18 +1,21 @@
 import logging
 # set print debug messages
 DEBUG_FILECREATION = True
-DEBUG_ACTIONS = True
+DEBUG_COMMAND = True
 DEBUG_STATES = True
 DEBUG_EPISDOE = True
 DEBUG_VALID_ACTION = True 
-#---Message types
-MSG_SETUP_DONE = "setupdone"
+# command types
 
+COMMAND_RESET = "reset"
+COMMAND_ACTION_MOVE = "move"
+COMMAND_SETUP_DONE = "done"
+COMMAND_TRAINING_DONE = "training done"
 
 #--- File constants
 MYPATH = r"E:\\Bachelorarbeit\\src\\simulation\\"
 EVENT_STATE = "state"
-EVENT_ACTION = "action"
+EVENT_COMMAND = "command"
 EVENT_REWARD = "reward"
 EVENT_CONFIG = "config"
 EVENT_MESSAGE = "message"
@@ -34,13 +37,11 @@ ID_REMAININGPROCTIME = "remainingproctime"
 ID_PROCTIME = "procTime"
 ID_THROUGHPUTPERHOUR = "throughputperhour"
 ID_TERMINAL = "terminal"
+
+
 ID_CURRENTID = "currentId"
 
 NODE_IDENTIFIER = "id"
-
-ACTIONTYPE_RESET = "reset"
-ACTIONTYPE_MOVE = "move"
-
 
 def debug_print(message, type):
     '''

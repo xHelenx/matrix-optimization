@@ -2,7 +2,7 @@ from tensorforce.environments import Environment
 import os
 import numpy as np
 from DataExchanger import DataExchanger
-from globalConstants import ACTIONTYPE_MOVE, ACTIONTYPE_RESET, DEBUG_ACTIONS, DEBUG_STATES, EVENT_ACTION, MYPATH, EXTENSION_XML, debug_print
+from globalConstants import  COMMAND_ACTION_MOVE, DEBUG_COMMAND, DEBUG_STATES, EVENT_COMMAND, MYPATH, EXTENSION_XML, debug_print
 
 class SPSEnvironmnet(Environment):
     def __init__(self):
@@ -23,14 +23,14 @@ class SPSEnvironmnet(Environment):
     def execute(self,actions):
 
         if not self.dataEx.is_valid_action(actions): #check if action is valid
-            debug_print(str(actions) + ": \t invalid", DEBUG_ACTIONS)
+            debug_print(str(actions) + ": \t invalid", DEBUG_COMMAND)
 
             next_state, reward = [self.dataEx.map_state_to_key()], self.dataEx.calculate_reward(False) #state does not change, terminal, punish invalid action
             return next_state, self.dataEx.terminal, reward
         else:
-            debug_print(str(actions) + ": \t valid", DEBUG_ACTIONS)
+            debug_print(str(actions) + ": \t valid", DEBUG_COMMAND)
             #send action to simulation
-            self.dataEx.write_action(actions, ACTIONTYPE_MOVE)
+            self.dataEx.write_command(commandtype=COMMAND_ACTION_MOVE, action=actions)
             
             #wait for receiving reward properties
             while not self.dataEx.received_reward:
