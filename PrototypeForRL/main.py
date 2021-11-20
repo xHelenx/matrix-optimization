@@ -7,7 +7,7 @@ from tensorforce import Agent, Environment
 
 from SPSEnvironemnt import SPSEnvironmnet
 from DataExchanger import DataExchanger
-from globalConstants import ACTIONTYPE_RESET, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EVENT_MESSAGE, EXTENSION_LOG, LOGFILE, MYPATH, EVENT_CONFIG,EVENT_REWARD,EVENT_ACTION, \
+from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EVENT_MESSAGE, EXTENSION_LOG, LOGFILE, MYPATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
     EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print
 class FileHandler(FileSystemEventHandler):
     
@@ -25,14 +25,14 @@ class FileHandler(FileSystemEventHandler):
         #    self.dataEx.read_file(EVENT_CONFIG)
         #    os.remove(MYPATH + EVENT_CONFIG + EXTENSION_XML)
         elif not (event.src_path == MYPATH + EVENT_CONFIG + EXTENSION_TEMP or event.src_path == MYPATH + EVENT_STATE + EXTENSION_TEMP \
-            or event.src_path == MYPATH + EVENT_ACTION + EXTENSION_TEMP or event.src_path == MYPATH + EVENT_REWARD + EXTENSION_TEMP or \
-                event.src_path == MYPATH + EVENT_ACTION + EXTENSION_XML or event.src_path == MYPATH + EVENT_CONFIG + EXTENSION_XML or \
+            or event.src_path == MYPATH + EVENT_COMMAND + EXTENSION_TEMP or event.src_path == MYPATH + EVENT_REWARD + EXTENSION_TEMP or \
+                event.src_path == MYPATH + EVENT_COMMAND + EXTENSION_XML or event.src_path == MYPATH + EVENT_CONFIG + EXTENSION_XML or \
                 event.src_path == MYPATH + EVENT_MESSAGE + EXTENSION_XML or event.src_path == MYPATH + EVENT_MESSAGE + EXTENSION_TEMP):
             raise ValueError("Unknown file type created, no event exists to handle this file")
 
 if __name__ ==  "__main__":
     #clean up old files 
-    all_events = [EVENT_ACTION,EVENT_REWARD,EVENT_STATE, EVENT_MESSAGE]
+    all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE, EVENT_MESSAGE]
     all_extensions = [EXTENSION_XML,EXTENSION_TEMP]
     for file in all_events:
         for extension in all_extensions:
@@ -66,12 +66,12 @@ if __name__ ==  "__main__":
     agent = Agent.create(agent="ppo", environment=env, batch_size = 1)
     print("...done")
 
-    env.dataEx.write_message()
+    env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
     
 
     num_updates = 0
 
-    for episode in range(17):
+    for episode in range(2):
         states = env.reset() 
         while not env.dataEx.received_state: #wait to receive first state
             pass
@@ -92,7 +92,7 @@ if __name__ ==  "__main__":
         debug_print("Episode "+ str(episode) + ": return="+ str(sum_rewards) + " updates="+ str(num_updates) +" steps="+ str(step) + ": " + str(terminal) + "\n ------------------------", DEBUG_EPISDOE)
         print('Episode {}: return={} updates={}, steps={}'.format(episode, sum_rewards, num_updates,step))
         print("-------------------------------")
-        env.dataEx.write_action([None,None,None], ACTIONTYPE_RESET) #reset SPS
+        env.dataEx.write_command(commandtype=COMMAND_RESET) #reset SPS
         
     #print('Mean evaluation return:', sum_rewards / amzahlEpisoden)
 
