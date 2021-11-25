@@ -1,5 +1,5 @@
 import os
-import time
+import sys
 import logging
 from watchdog.observers import Observer
 from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEventHandler
@@ -31,6 +31,9 @@ class FileHandler(FileSystemEventHandler):
             raise ValueError("Unknown file type created, no event exists to handle this file")
 
 if __name__ ==  "__main__":
+    PATH = sys.argv[1] #global
+    print(PATH)
+    
     #clean up old files 
     all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE, EVENT_MESSAGE]
     all_extensions = [EXTENSION_XML,EXTENSION_TEMP]
@@ -45,7 +48,7 @@ if __name__ ==  "__main__":
     except:
         pass
     logging.basicConfig(filename=PATH + LOGFILE + EXTENSION_LOG, encoding='utf-8', level=logging.DEBUG)
-
+    debug_print(PATH,DEBUG_FILECREATION)
     
     print("Creating environment...")
     env = Environment.create(environment=SPSEnvironmnet())

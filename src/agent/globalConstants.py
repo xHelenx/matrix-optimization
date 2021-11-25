@@ -13,7 +13,7 @@ COMMAND_SETUP_DONE = "done"
 COMMAND_TRAINING_DONE = "training done"
 
 #--- File constants
-PATH = r"E:\\Bachelorarbeit\\src\\simulation\\"
+PATH = "" #r"E:\\Bachelorarbeit\\src\\simulation\\"
 EVENT_STATE = "state"
 EVENT_COMMAND = "command"
 EVENT_REWARD = "reward"
