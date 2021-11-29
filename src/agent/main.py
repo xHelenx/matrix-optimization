@@ -1,5 +1,7 @@
 import os
 import sys
+from time import sleep
+import signal
 import logging
 from watchdog.observers import Observer
 from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEventHandler
@@ -7,8 +9,9 @@ from tensorforce import Agent, Environment
 
 from SPSEnvironemnt import SPSEnvironmnet
 from DataExchanger import DataExchanger
-from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EVENT_MESSAGE, EXTENSION_LOG, LOGFILE, PATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
-    EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print
+from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EXTENSION_LOG, LOGFILE, PATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
+    EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print, EVENT_RESETDONE, SLEEP_TIME
+
 class FileHandler(FileSystemEventHandler):
     
     def __init__(self,de):
@@ -21,21 +24,30 @@ class FileHandler(FileSystemEventHandler):
             self.dataEx.read_file(EVENT_STATE)
         elif event.src_path == (PATH + EVENT_REWARD + EXTENSION_XML):
             self.dataEx.read_file(EVENT_REWARD)
+        elif event.src_path == (PATH + EVENT_RESETDONE + EXTENSION_XML):
+            self.dataEx.read_file(EVENT_RESETDONE)
         #elif event.src_path == (PATH + EVENT_CONFIG + EXTENSION_XML):
         #    self.dataEx.read_file(EVENT_CONFIG)
         #    os.remove(PATH + EVENT_CONFIG + EXTENSION_XML)
         elif not (event.src_path == PATH + EVENT_CONFIG + EXTENSION_TEMP or event.src_path == PATH + EVENT_STATE + EXTENSION_TEMP \
             or event.src_path == PATH + EVENT_COMMAND + EXTENSION_TEMP or event.src_path == PATH + EVENT_REWARD + EXTENSION_TEMP or \
                 event.src_path == PATH + EVENT_COMMAND + EXTENSION_XML or event.src_path == PATH + EVENT_CONFIG + EXTENSION_XML or \
-                event.src_path == PATH + EVENT_MESSAGE + EXTENSION_XML or event.src_path == PATH + EVENT_MESSAGE + EXTENSION_TEMP):
+                event.src_path == PATH + EVENT_RESETDONE + EXTENSION_TEMP):
             raise ValueError("Unknown file type created, no event exists to handle this file")
+
+def signal_handler(signal, frame):
+    print('Process killed with Ctrl+C, stopping simulation')
+    de = DataExchanger()
+    de.write_command(commandtype=COMMAND_TRAINING_DONE) 
+    sys.exit(0)
 
 if __name__ ==  "__main__":
     PATH = sys.argv[1] #global
-    print(PATH)
-    
+    signal.signal(signal.SIGINT, signal_handler) #end simulation on ctlr c
+
+     
     #clean up old files 
-    all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE, EVENT_MESSAGE]
+    all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE, EVENT_RESETDONE]
     all_extensions = [EXTENSION_XML,EXTENSION_TEMP]
     for file in all_events:
         for extension in all_extensions:
@@ -70,13 +82,12 @@ if __name__ ==  "__main__":
     print("...done")
     num_updates = 0
 
-    for episode in range(2):
+    for episode in range(75):
         env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
         states = env.reset() 
         while not env.dataEx.received_state: #wait to receive first state
-            pass
+            sleep(SLEEP_TIME)
         env.dataEx.received_state = False
-    
         debug_print(env.dataEx.state, DEBUG_STATES)
         sum_rewards = 0.0
         terminal = False
@@ -92,7 +103,10 @@ if __name__ ==  "__main__":
         debug_print("Episode "+ str(episode) + ": return="+ str(sum_rewards) + " updates="+ str(num_updates) +" steps="+ str(step) + ": " + str(terminal) + "\n ------------------------", DEBUG_EPISDOE)
         print('Episode {}: return={} updates={}, steps={}'.format(episode, sum_rewards, num_updates,step))
         print("-------------------------------")
-        env.dataEx.write_command(commandtype=COMMAND_RESET) #reset SPS
+        #env.dataEx.write_command(commandtype=COMMAND_RESET) #reset SPS
+        #while not env.dataEx.received_resetdone:
+        #    pass
+        #env.dataEx.received_resetdone = False
     env.dataEx.write_command(commandtype=COMMAND_TRAINING_DONE) 
     #print('Mean evaluation return:', sum_rewards / amzahlEpisoden)
 

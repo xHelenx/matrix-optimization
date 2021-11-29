@@ -1,14 +1,16 @@
 from tensorforce.environments import Environment
 import os
 import numpy as np
+from time import sleep
 from DataExchanger import DataExchanger
-from globalConstants import  COMMAND_ACTION_MOVE, DEBUG_COMMAND, DEBUG_STATES, EVENT_COMMAND, EXTENSION_XML, debug_print
+from globalConstants import  COMMAND_ACTION_MOVE, DEBUG_COMMAND, DEBUG_STATES, EVENT_COMMAND, EXTENSION_XML, debug_print, SLEEP_TIME
 
 class SPSEnvironmnet(Environment):
     def __init__(self):
         super().__init__()
         #terminal func or var?
         self.dataEx = DataExchanger()
+        self.cnt = 0
     def states(self):
         return dict(type="int", shape=(1,), num_values=(pow(2,self.dataEx.totalMachine)-1)) #each machine can either be occupied or not
     def actions(self):
@@ -34,16 +36,20 @@ class SPSEnvironmnet(Environment):
             
             #wait for receiving reward properties
             while not self.dataEx.received_reward:
-                pass
+                sleep(SLEEP_TIME)
             self.dataEx.received_reward = False
 
             #calculate reward according to reward properties, update terminal
             reward = self.dataEx.calculate_reward(True) 
             
+            debug_print(self.dataEx.terminal, DEBUG_COMMAND)
             #wait for new state 
-            while not self.dataEx.received_state:
-                pass
+            while (not self.dataEx.received_state) and (not self.dataEx.terminal):
+                sleep(SLEEP_TIME)
             self.dataEx.received_state = False 
+
+            self.cnt += 1
+            debug_print(self.cnt,DEBUG_STATES)
             debug_print("current state ID: " + str(self.dataEx.current_state_id), DEBUG_STATES)
             return [self.dataEx.map_state_to_key()], self.dataEx.terminal, reward
 

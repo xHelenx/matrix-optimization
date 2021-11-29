@@ -1,10 +1,14 @@
 import logging
+
+#
+SLEEP_TIME = 0.005
 # set print debug messages
-DEBUG_FILECREATION = True
-DEBUG_COMMAND = True
-DEBUG_STATES = True
-DEBUG_EPISDOE = True
-DEBUG_VALID_ACTION = True 
+DEBUG_FILECREATION = False
+DEBUG_COMMAND = False
+DEBUG_STATES = False
+DEBUG_EPISDOE = False
+DEBUG_VALID_ACTION = False 
+DEBUG_WARNING = True
 # command types
 
 COMMAND_RESET = "reset"
@@ -18,7 +22,8 @@ EVENT_STATE = "state"
 EVENT_COMMAND = "command"
 EVENT_REWARD = "reward"
 EVENT_CONFIG = "config"
-EVENT_MESSAGE = "message"
+EVENT_RESETDONE = "resetDone"
+
 LOGFILE = "logfile"
 EXTENSION_XML = ".xml"
 EXTENSION_TEMP = ".temp"
@@ -50,3 +55,5 @@ def debug_print(message, type):
     '''
     if type:
         logging.debug(message)
+
+        

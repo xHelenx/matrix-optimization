@@ -1,22 +1,24 @@
+from logging import DEBUG
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import json
 import os
-
+from time import sleep
 from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_FILECREATION, \
-DEBUG_VALID_ACTION, EVENT_MESSAGE, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, PATH, EVENT_CONFIG,EVENT_REWARD, \
-EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
-ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print
+DEBUG_VALID_ACTION, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, PATH, EVENT_CONFIG,EVENT_REWARD, \
+EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, EVENT_RESETDONE, \
+ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, DEBUG_WARNING, SLEEP_TIME
 
 class DataExchanger:
     def __init__(self):
         self.workplan = dict() #{Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
-        #latter extend with total processing type to see performance consequences for RL
+        #later extend with total processing type to see performance consequences for RL
         self.state = dict() #{Machine}:{Occupation:true|false, RemainingProcTime:float,PartType:string}}, does not include the source! -> removed to hald state space.. + not in map to key
         self.actions = dict() #{{Parttype:{src:dest}}..}
         self.rewardProperties = dict() #e.g.  {"througput":10, ... } 
         self.received_state = False
         self.received_reward = False
+        self.received_resetdone = False
         self.machines = list()
         self.totalMachine = 0
         self.terminal = False 
@@ -46,19 +48,75 @@ class DataExchanger:
         return key
 
     def read_file(self, event):
-        tree = ET.parse( PATH + event + EXTENSION_XML)
-        root = tree.getroot()
+        is_readable = False
+        while not is_readable:
+                try:
+                    tree = ET.parse( PATH + event + EXTENSION_XML)
+                    root = tree.getroot()
+                    is_readable = True
+                except:
+                    debug_print("WARNING:File is in use, cannot open file", DEBUG_WARNING)
+                    sleep(SLEEP_TIME)
 
+                
         if event == EVENT_CONFIG:
             self.read_config(root)
+            is_deletable = False
+            while not is_deletable:
+                try:
+                    os.remove(PATH + event + EXTENSION_XML)
+                    is_deletable = True
+                except:
+                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
+                    sleep(SLEEP_TIME)
+
+            while os.path.exists(PATH + event + EXTENSION_XML):
+                pass
+
         elif event == EVENT_STATE:
             self.read_state(root)
+            is_deletable = False
+            while not is_deletable:
+                try:
+                    os.remove(PATH + event + EXTENSION_XML)
+                    is_deletable = True
+                except:
+                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
+                    sleep(SLEEP_TIME)
+
+            while os.path.exists(PATH + event + EXTENSION_XML):
+                pass
             self.received_state = True
+
         elif event == EVENT_REWARD:
             self.read_reward(root)
-            self.received_reward = True
-        os.remove(PATH + event + EXTENSION_XML)
+            is_deletable = False
+            while not is_deletable:
+                try:
+                    os.remove(PATH + event + EXTENSION_XML)
+                    is_deletable = True
+                except:
+                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
+                    sleep(SLEEP_TIME)
 
+            while os.path.exists(PATH + event + EXTENSION_XML):
+                pass
+            self.received_reward = True
+        elif event == EVENT_RESETDONE:
+            is_deletable = False
+            while not is_deletable:
+                try:
+                    os.remove(PATH + event + EXTENSION_XML)
+                    is_deletable = True
+                except:
+                    debug_print("File is in use, cannot delete file", DEBUG_FILECREATION)
+                    sleep(SLEEP_TIME)
+
+            while os.path.exists(PATH + event + EXTENSION_XML):
+                pass
+            self.received_resetdone = True
+
+        
     def read_state(self, root):
         self.state = {}
         for state in root:
