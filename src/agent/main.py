@@ -10,7 +10,7 @@ from tensorforce import Agent, Environment
 from SPSEnvironemnt import SPSEnvironmnet
 from DataExchanger import DataExchanger
 from globalConstants import  COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EXTENSION_LOG, LOGFILE, PATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
-    EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print, EVENT_RESETDONE, SLEEP_TIME
+    EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print, SLEEP_TIME
 
 class FileHandler(FileSystemEventHandler):
     
@@ -19,35 +19,38 @@ class FileHandler(FileSystemEventHandler):
         self.dataEx = de
 
     def on_created(self, event):
+        '''
+            When a file is created in the defined directory, the triggered event is handled
+            @input event - file name 
+            @output - %
+            @precondition - observer is installed
+            @postcondition - %
+        '''
         debug_print(event.src_path, DEBUG_FILECREATION)
         if   event.src_path == (PATH + EVENT_STATE + EXTENSION_XML):
             self.dataEx.read_file(EVENT_STATE)
         elif event.src_path == (PATH + EVENT_REWARD + EXTENSION_XML):
             self.dataEx.read_file(EVENT_REWARD)
-        elif event.src_path == (PATH + EVENT_RESETDONE + EXTENSION_XML):
-            self.dataEx.read_file(EVENT_RESETDONE)
-        #elif event.src_path == (PATH + EVENT_CONFIG + EXTENSION_XML):
-        #    self.dataEx.read_file(EVENT_CONFIG)
-        #    os.remove(PATH + EVENT_CONFIG + EXTENSION_XML)
         elif not (event.src_path == PATH + EVENT_CONFIG + EXTENSION_TEMP or event.src_path == PATH + EVENT_STATE + EXTENSION_TEMP \
             or event.src_path == PATH + EVENT_COMMAND + EXTENSION_TEMP or event.src_path == PATH + EVENT_REWARD + EXTENSION_TEMP or \
-                event.src_path == PATH + EVENT_COMMAND + EXTENSION_XML or event.src_path == PATH + EVENT_CONFIG + EXTENSION_XML or \
-                event.src_path == PATH + EVENT_RESETDONE + EXTENSION_TEMP):
+                event.src_path == PATH + EVENT_COMMAND + EXTENSION_XML or event.src_path == PATH + EVENT_CONFIG + EXTENSION_XML):
             raise ValueError("Unknown file type created, no event exists to handle this file")
 
 def signal_handler(signal, frame):
+    '''
+    Sends a termination information to the simulation, if the program was shut down with Ctrl+C
+    '''
+
     print('Process killed with Ctrl+C, stopping simulation')
     de = DataExchanger()
     de.write_command(commandtype=COMMAND_TRAINING_DONE) 
     sys.exit(0)
 
 if __name__ ==  "__main__":
-    PATH = sys.argv[1] #global
-    signal.signal(signal.SIGINT, signal_handler) #end simulation on ctlr c
+    signal.signal(signal.SIGINT, signal_handler) #setup signal handler for Ctrl+C
 
-     
     #clean up old files 
-    all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE, EVENT_RESETDONE]
+    all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE]
     all_extensions = [EXTENSION_XML,EXTENSION_TEMP]
     for file in all_events:
         for extension in all_extensions:
@@ -59,6 +62,8 @@ if __name__ ==  "__main__":
         os.remove(PATH + LOGFILE + EXTENSION_LOG)
     except:
         pass
+
+    #set up logging file
     logging.basicConfig(filename=PATH + LOGFILE + EXTENSION_LOG, encoding='utf-8', level=logging.DEBUG)
     debug_print(PATH,DEBUG_FILECREATION)
     
@@ -71,7 +76,6 @@ if __name__ ==  "__main__":
     observer = Observer()
     observer.schedule(event_handler,  path=PATH,  recursive=False)
     observer.start()
-
     env.dataEx.read_file(EVENT_CONFIG)
     env.dataEx.define_action_space() #create action space based on workplan from config
     
@@ -82,6 +86,7 @@ if __name__ ==  "__main__":
     print("...done")
     num_updates = 0
 
+    #training loop
     for episode in range(75):
         env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
         states = env.reset() 
@@ -103,14 +108,10 @@ if __name__ ==  "__main__":
         debug_print("Episode "+ str(episode) + ": return="+ str(sum_rewards) + " updates="+ str(num_updates) +" steps="+ str(step) + ": " + str(terminal) + "\n ------------------------", DEBUG_EPISDOE)
         print('Episode {}: return={} updates={}, steps={}'.format(episode, sum_rewards, num_updates,step))
         print("-------------------------------")
-        #env.dataEx.write_command(commandtype=COMMAND_RESET) #reset SPS
-        #while not env.dataEx.received_resetdone:
-        #    pass
-        #env.dataEx.received_resetdone = False
     env.dataEx.write_command(commandtype=COMMAND_TRAINING_DONE) 
     #print('Mean evaluation return:', sum_rewards / amzahlEpisoden)
 
-    # Close agent and env
+    #TODO: evaluation of agent, save model
     agent.close()
     env.close()
 

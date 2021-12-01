@@ -6,24 +6,34 @@ import os
 from time import sleep
 from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_FILECREATION, \
 DEBUG_VALID_ACTION, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, PATH, EVENT_CONFIG,EVENT_REWARD, \
-EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, EVENT_RESETDONE, \
+EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
 ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, DEBUG_WARNING, SLEEP_TIME
 
 class DataExchanger:
     def __init__(self):
+        '''
+        workplan            -  includes the processing steps per item type in the following format: {Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
+        state               -  holds the last transmited state of the simulation
+        action              -  dict of all possible actions in this simulation setup, format: {{Parttype:{src:dest}}..}
+                                - possible action = theoretically senseful information due to the workplan, 
+                                - valid action = applicable action in the current state
+        rewardProperties    - dict of statistic values to calculate the reward
+        received_*          - boolean indicating whether the specified file was received
+        machines            - list of all machines (drains excluded)
+        totalMachine        - number indicating the amount of machines
+        terminal            - boolean indicating the end of an episode 
+        
+        '''
         self.workplan = dict() #{Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
-        #later extend with total processing type to see performance consequences for RL
-        self.state = dict() #{Machine}:{Occupation:true|false, RemainingProcTime:float,PartType:string}}, does not include the source! -> removed to hald state space.. + not in map to key
+        self.state = dict() #{Machine}:{Occupation:true|false, RemainingProcTime:float,PartType:string}}
         self.actions = dict() #{{Parttype:{src:dest}}..}
         self.rewardProperties = dict() #e.g.  {"througput":10, ... } 
         self.received_state = False
         self.received_reward = False
-        self.received_resetdone = False
         self.machines = list()
         self.totalMachine = 0
         self.terminal = False 
-        self.current_state_id = -1
-
+        
     def map_state_to_key(self):
         '''
         The state space of the RL comprises of all possible combinations of the occupation of each machine. 
@@ -48,6 +58,17 @@ class DataExchanger:
         return key
 
     def read_file(self, event):
+        '''
+        Wraps the individual file reading methods. This method encapsulate how to react to each incoming file
+
+        @input: event - is the file name 
+        @output: - 
+
+        @preconditions: file with event name exists
+        @postconditions: information of the file are stored in the data exchanger and are ready for use
+        '''
+
+        #make sure file is not in use
         is_readable = False
         while not is_readable:
                 try:
@@ -58,73 +79,61 @@ class DataExchanger:
                     debug_print("WARNING:File is in use, cannot open file", DEBUG_WARNING)
                     sleep(SLEEP_TIME)
 
-                
+        #EVENT_CONFIG
         if event == EVENT_CONFIG:
             self.read_config(root)
-            is_deletable = False
-            while not is_deletable:
-                try:
-                    os.remove(PATH + event + EXTENSION_XML)
-                    is_deletable = True
-                except:
-                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
-                    sleep(SLEEP_TIME)
-
+            self.delete_file(event)
             while os.path.exists(PATH + event + EXTENSION_XML):
                 pass
 
+        #EVENT_STATE
         elif event == EVENT_STATE:
             self.read_state(root)
-            is_deletable = False
-            while not is_deletable:
-                try:
-                    os.remove(PATH + event + EXTENSION_XML)
-                    is_deletable = True
-                except:
-                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
-                    sleep(SLEEP_TIME)
-
+            self.delete_file(event)
             while os.path.exists(PATH + event + EXTENSION_XML):
                 pass
             self.received_state = True
 
+        #EVENT_REWARD
         elif event == EVENT_REWARD:
             self.read_reward(root)
-            is_deletable = False
-            while not is_deletable:
-                try:
-                    os.remove(PATH + event + EXTENSION_XML)
-                    is_deletable = True
-                except:
-                    debug_print("WARNING:File is in use, cannot delete file", DEBUG_WARNING)
-                    sleep(SLEEP_TIME)
-
+            self.delete_file(event)
             while os.path.exists(PATH + event + EXTENSION_XML):
                 pass
             self.received_reward = True
-        elif event == EVENT_RESETDONE:
-            is_deletable = False
-            while not is_deletable:
-                try:
-                    os.remove(PATH + event + EXTENSION_XML)
-                    is_deletable = True
-                except:
-                    debug_print("File is in use, cannot delete file", DEBUG_FILECREATION)
-                    sleep(SLEEP_TIME)
-
-            while os.path.exists(PATH + event + EXTENSION_XML):
-                pass
-            self.received_resetdone = True
-
         
+    def delete_file(self, event):
+        '''
+        helper function to delete a file when it is not in use anymore
+
+        @input event - file name
+        @output %
+        @precondition - file exists
+        @postcondition - file does not exist
+        '''
+        is_deletable = False
+        while not is_deletable:
+            try:
+                os.remove(PATH + event + EXTENSION_XML)
+                is_deletable = True
+            except:
+                debug_print("File is in use, cannot delete file", DEBUG_FILECREATION)
+                sleep(SLEEP_TIME)
+
     def read_state(self, root):
+        '''
+        reads the state and stores it for later use
+        @input - root the root of the xml file to read
+        @output - %
+        @preconditions - %
+        @postconditions - %
+        '''
         self.state = {}
         for state in root:
             for component in state:
                 if component.tag == NODE_IDENTIFIER:
                     self.current_state_id = int(component.text)
                 else:
-                #print(machine.tag)
                     machine_properties = {}
                     for property in component:
                         if property.tag == ID_OCCUPIED:
@@ -154,6 +163,14 @@ class DataExchanger:
             
 
     def read_reward(self,root):
+        '''
+        reads the reward file and stores the reward properties for later use
+
+        @input - root the root of the xml file to read
+        @output - %
+        @preconditions - %
+        @postconditions - %
+        '''
         for metric in root: 
             if metric.tag == ID_THROUGHPUTPERHOUR:
                 self.rewardProperties.update({ID_THROUGHPUTPERHOUR:float(metric.text)})
@@ -165,9 +182,18 @@ class DataExchanger:
                 else:
                     raise ValueError("Unknown value for ID_TERMINAL")
             #add if for each property to make sure everything is written in order
-            # if .. 
+            #if metric.tag == ID_NEW .. 
 
     def read_config(self,root):
+        '''
+        
+        reads the config file and stores the work plan for later use
+
+        @input - root the root of the xml file to read
+        @output - %
+        @preconditions - %
+        @postconditions - %
+        '''
         #{PartA: {{1:{M1:{M2:10}}}}}
         property_val = -1
         dest_dict = {}
@@ -195,7 +221,6 @@ class DataExchanger:
                     dest_dict = {}
                 procstep_dict.update({procstep.tag:src_dict})
                 src_dict = {}
-            #debug_print({part.tag:procstep_dict})
             self.workplan.update({part.tag:procstep_dict})
             procstep_dict = {}
               
@@ -211,8 +236,9 @@ class DataExchanger:
                     - COMMAND_RESET: simulation shall be reseted
                     - COMMAND_ACTION_MOVE: a move action, as defined in the action shall be performed
                     - COMMAND_SETUP_DONE: simulation can start the episode now
+                    - COMMAND_TRAINING_DONE: the entire tranining is done, stop simulation
         '''
-
+        #writing the file
         root = ET.Element("command")
         child_command = ET.SubElement(root,"commandtype")
         child_command.attrib = {"type": "string"}
@@ -241,7 +267,8 @@ class DataExchanger:
             
         debug_print(commandtype, DEBUG_COMMAND)
         
-        
+        #write string to .temp file and rename it to ensure that the file 
+        #is complete before the simulation starts reading
         finishedText = self.format_output(root)
         if os.path.exists(PATH + EVENT_COMMAND + EXTENSION_TEMP):
             os.remove(PATH + EVENT_COMMAND + EXTENSION_TEMP)
@@ -258,11 +285,13 @@ class DataExchanger:
             debug_print(PATH + EVENT_COMMAND + EXTENSION_XML, DEBUG_FILECREATION)
 
         
-    def define_action_space(self): #TODO call after config file read
+    def define_action_space(self): 
         '''
         Creates a set of all possible actions. The actions are not necessarily valid at every time step
-
-        @precondition: the config file must have been read to create the workplan
+        @input : %
+        @output: %
+        @preconditions: the config file must have been read to create the workplan
+        @postconditions: %
         '''
         if self.workplan == {}:
             raise RuntimeError("Cannot define action space, workplan has not been initialized yet")
@@ -272,15 +301,22 @@ class DataExchanger:
             for processingstep in self.workplan[parttype]:
                 for source in self.workplan[parttype][processingstep]:
                     for dest in self.workplan[parttype][processingstep][source]: 
-                        self.actions.update({i:(parttype,source,dest)})
+                        self.actions.update({i:(parttype,source,dest)}) #add possible action to action space
                         i += 1
 
-    def calculate_reward(self, isValid):
+    def calculate_reward(self, isValid): #TODO: add switch for different reward functions
+        '''
+        calculates the reward for the chosen action
+
+        @input isValid - bool is action is valid
+        @output reward - numerical value indicating how good the action was
+        @precondition  - action was performed
+        @postcondition - %
+        '''
         if not isValid:
             return -1
         else:
             return self.rewardProperties[ID_THROUGHPUTPERHOUR] +1 #+1 just for now, because in the beginning itis 0 for a while
-        #add benefits etc later #TODO
     
     def is_valid_action(self,action):
         '''
@@ -335,6 +371,9 @@ class DataExchanger:
         return reparsed.toprettyxml(indent="  ")
 
     def format_output(self,text):
-            rough_string = ET.tostring(text, 'utf-8')
-            reparsed = minidom.parseString(rough_string)
-            return reparsed.toprettyxml(indent="  ")
+        '''
+        Formats a given text to be easier to read
+        '''
+        rough_string = ET.tostring(text, 'utf-8')
+        reparsed = minidom.parseString(rough_string)
+        return reparsed.toprettyxml(indent="  ")
