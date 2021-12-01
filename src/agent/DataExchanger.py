@@ -233,7 +233,6 @@ class DataExchanger:
 
         @input action: (parttype, source, destination)
         @input commandtype:
-                    - COMMAND_RESET: simulation shall be reseted
                     - COMMAND_ACTION_MOVE: a move action, as defined in the action shall be performed
                     - COMMAND_SETUP_DONE: simulation can start the episode now
                     - COMMAND_TRAINING_DONE: the entire tranining is done, stop simulation
@@ -243,9 +242,7 @@ class DataExchanger:
         child_command = ET.SubElement(root,"commandtype")
         child_command.attrib = {"type": "string"}
         
-        if commandtype == COMMAND_RESET:
-            child_command.text = COMMAND_RESET
-        elif commandtype == COMMAND_SETUP_DONE:
+        if commandtype == COMMAND_SETUP_DONE:
             child_command.text = COMMAND_SETUP_DONE
         elif commandtype == COMMAND_TRAINING_DONE:
             child_command.text = COMMAND_TRAINING_DONE
