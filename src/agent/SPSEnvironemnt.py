@@ -35,7 +35,7 @@ class SPSEnvironmnet(Environment):
         '''
         defines maximal time steps per episode
         '''
-        return 10000
+        return 100000
     def reward(self):
         '''
         Define reward as numerical value, init 0    
@@ -59,7 +59,7 @@ class SPSEnvironmnet(Environment):
             return next_state, self.dataEx.terminal, reward
         else:
             #Action is valid: send action, get reward, get state 
-
+            self.dataEx.validActionsCounter += 1 
             debug_print(str(actions) + ": \t valid", DEBUG_COMMAND)
             #send action to simulation
             self.dataEx.write_command(commandtype=COMMAND_ACTION_MOVE, action=actions)

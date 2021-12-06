@@ -9,7 +9,7 @@ from tensorforce import Agent, Environment
 
 from SPSEnvironemnt import SPSEnvironmnet
 from DataExchanger import DataExchanger
-from globalConstants import  COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EXTENSION_LOG, LOGFILE, PATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
+from globalConstants import  COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_EPISDOE, DEBUG_FILECREATION, DEBUG_STATES, EXPERIMENT_PATH, EXTENSION_LOG, LOGFILE, PATH, EVENT_CONFIG,EVENT_REWARD,EVENT_COMMAND, \
     EVENT_STATE,EXTENSION_XML,EXTENSION_TEMP, debug_print, SLEEP_TIME
 
 class FileHandler(FileSystemEventHandler):
@@ -48,7 +48,6 @@ def signal_handler(signal, frame):
 
 if __name__ ==  "__main__":
     signal.signal(signal.SIGINT, signal_handler) #setup signal handler for Ctrl+C
-
     #clean up old files 
     all_events = [EVENT_COMMAND,EVENT_REWARD,EVENT_STATE]
     all_extensions = [EXTENSION_XML,EXTENSION_TEMP]
@@ -71,6 +70,9 @@ if __name__ ==  "__main__":
     env = Environment.create(environment=SPSEnvironmnet())
     print("...done")
 
+    #load current experiment configurations
+    env.dataEx.load_experiment(int(sys.argv[1]))
+
     #setup file handler to trigger on creation of file
     event_handler = FileHandler(env.dataEx)
     observer = Observer()
@@ -80,14 +82,16 @@ if __name__ ==  "__main__":
     env.dataEx.define_action_space() #create action space based on workplan from config
     
     print("Creating agent...")
-    #agent = Agent.create(agent=Agent.TensorforceAgent(), environment=env)
-    #agent = Agent.create(agent="ppo", environment=env, batch_size = 10 )
-    agent = Agent.create(agent="ppo", environment=env, batch_size = 1)
+    agent = Agent.create(agent=env.dataEx.agent_type, \
+                        environment = env, \
+                        batch_size = env.dataEx.batch_size,  exploration = env.dataEx.exploration_rate,
+                        learning_rate = env.dataEx.learning_rate, discount = env.dataEx.discount_factor)
     print("...done")
     num_updates = 0
 
+    print(env.dataEx.foldername)
     #training loop
-    for episode in range(75):
+    for episode in range(10): #env.dataEx.episodes):
         env.dataEx.write_command(commandtype=COMMAND_SETUP_DONE)
         states = env.reset() 
         while not env.dataEx.received_state: #wait to receive first state
@@ -97,6 +101,7 @@ if __name__ ==  "__main__":
         sum_rewards = 0.0
         terminal = False
         step = 0
+        env.dataEx.validActionsCounter = 0
         while not terminal:
             actionID = agent.act(states=states)
             action = env.dataEx.actions[actionID[0]] 
@@ -105,11 +110,18 @@ if __name__ ==  "__main__":
             #debug_print(env.dataEx.state, DEBUG_STATES)
             num_updates += agent.observe(terminal=terminal, reward=reward)
             sum_rewards += reward
+        env.dataEx.returns.append(sum_rewards)
+        env.dataEx.totalSteps.append(step)
+        env.dataEx.validActions.append(env.dataEx.validActionsCounter)
+        env.dataEx.totalTime.append(env.dataEx.totalTimeThisEpisode)
         debug_print("Episode "+ str(episode) + ": return="+ str(sum_rewards) + " updates="+ str(num_updates) +" steps="+ str(step) + ": " + str(terminal) + "\n ------------------------", DEBUG_EPISDOE)
         print('Episode {}: return={} updates={}, steps={}'.format(episode, sum_rewards, num_updates,step))
         print("-------------------------------")
+    
     env.dataEx.write_command(commandtype=COMMAND_TRAINING_DONE) 
-    #print('Mean evaluation return:', sum_rewards / amzahlEpisoden)
+    env.dataEx.save_results()
+    agent.save(EXPERIMENT_PATH + env.dataEx.foldername, filename="agent")
+    #safe model
 
     #TODO: evaluation of agent, save model
     agent.close()

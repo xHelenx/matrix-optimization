@@ -1,11 +1,14 @@
 from logging import DEBUG
+from typing import Text
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import json
 import os
+from datetime import datetime
 from time import sleep
-from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_FILECREATION, \
-DEBUG_VALID_ACTION, ID_CURRENTID, ID_PROCTIME, ID_TERMINAL, ID_THROUGHPUTPERHOUR, PATH, EVENT_CONFIG,EVENT_REWARD, \
+import re 
+from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_CURRENT_EXPERIMENT, DEBUG_FILECREATION, \
+DEBUG_VALID_ACTION, EXPERIMENT, EXPERIMENT_PATH, ID_ACTION_TYPE, ID_AGENT, ID_AGENT_TYPE, ID_BATCH_SIZE, ID_CURRENTID, ID_DISCOUNT_FACTOR, ID_EPISODES, ID_EXPLORATION_RATE, ID_FOLDERNAME, ID_LEARNING_RATE, ID_PROCTIME, ID_REWARD_TYPE, ID_TERMINAL, ID_THROUGHPUTPERHOUR, ID_TOTALTIME, PATH, EVENT_CONFIG,EVENT_REWARD, \
 EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
 ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, DEBUG_WARNING, SLEEP_TIME
 
@@ -23,6 +26,17 @@ class DataExchanger:
         totalMachine        - number indicating the amount of machines
         terminal            - boolean indicating the end of an episode 
         
+        ##--- 
+        discount_factor     - 
+        learning_rate       -
+        episode             -
+        max_timesteps       -
+        exploration_rate    -
+        batch_size          -   
+        reward_type         - 
+        action_type         -
+        agent_type          -
+        agent_type          -
         '''
         self.workplan = dict() #{Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
         self.state = dict() #{Machine}:{Occupation:true|false, RemainingProcTime:float,PartType:string}}
@@ -32,7 +46,35 @@ class DataExchanger:
         self.received_reward = False
         self.machines = list()
         self.totalMachine = 0
-        self.terminal = False 
+        self.terminal = False
+        self.totalTimeThisEpisode = -1 
+
+        self.validActionsCounter = 0
+        
+        ##---- experiment configurations
+        self.discount_factor   = -1
+        self.learning_rate = -1
+        self.episodes   = -1
+        self.max_timesteps = -1
+        self.exploration_rate  = -1
+        self.batch_size    = -1
+        self.reward_type    = -1
+        self.action_type    = -1
+        self.agent_type = -1
+        self.agent_type = ""
+        self.foldername = ""
+        
+
+        ##---- result values to log
+        self.returns = [] 
+        self.totalSteps = [] 
+        self.validActions = [] 
+        self.totalTime = []
+
+        self.allResultsToLog = [self.returns, self.totalSteps, self.validActions, self.totalTime]
+        self.namesofResults  = ["returns", "totalSteps", "validActions", "totalTime"]
+        
+
         
     def map_state_to_key(self):
         '''
@@ -151,11 +193,15 @@ class DataExchanger:
                             else:
                                 raise ValueError("Unknown value for ID_PARTTYPE")
                         elif property.tag == ID_REMAININGPROCTIME:
-                            try:
-                                float(property.text)
-                            except:
-                                raise ValueError("Incorrect datatype for ID_REMAININGPROCTIME")
-                            machine_properties.update({ID_REMAININGPROCTIME:float(property.text)})
+                            if property.text == "-1": 
+                                property.text = "0:0:0.0"
+                            elif property.text.count(":") == 0 : #adapt format
+                                property.text = "0:0:" + property.text
+                            elif property.text.count(":") == 1: 
+                                property.text = "0:" + property.text
+                            timeval = datetime.strptime(property.text, "%H:%M:%S.%f")
+                            totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
+                            machine_properties.update({ID_REMAININGPROCTIME:totalseconds})
                         else:
                             raise ValueError("Unknown property type")
                         self.state.update({component.tag:machine_properties})
@@ -174,6 +220,14 @@ class DataExchanger:
         for metric in root: 
             if metric.tag == ID_THROUGHPUTPERHOUR:
                 self.rewardProperties.update({ID_THROUGHPUTPERHOUR:float(metric.text)})
+            if metric.tag == ID_TOTALTIME:   
+                if metric.text.count(":") == 0 : #adapt format
+                    metric.text = "0:0:" + metric.text
+                elif metric.text.count(":") == 1: 
+                    metric.text = "0:" + metric.text
+                timeval = datetime.strptime(metric.text, "%H:%M:%S.%f")
+                totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
+                self.totalTimeThisEpisode = totalseconds
             if metric.tag == ID_TERMINAL:
                 if metric.text == "true":
                     self.terminal = True
@@ -207,10 +261,13 @@ class DataExchanger:
                     for dest in src:
                         for property in dest:
                             if property.tag == ID_PROCTIME:
-                                try:
-                                    property_val = float(property.text)
-                                except:
-                                    raise ValueError("Incorrect datatype for ID_PROCTIME")
+                                if property.text.count(":") == 0 : #adapt format
+                                    property.text = "0:0:" + property.text
+                                elif property.text.count(":") == 1: 
+                                    property.text = "0:" + property.text
+                                timeval = datetime.strptime(property.text, "%H:%M:%S.%f")
+                                totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
+                                property_val = totalseconds
                         dest_dict.update({dest.tag:property_val})
                         if not dest.tag in self.machines:
                             self.machines.append(dest.tag) 
@@ -374,3 +431,43 @@ class DataExchanger:
         rough_string = ET.tostring(text, 'utf-8')
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ")
+
+    def load_experiment(self,experimentID):
+        tree = ET.parse( EXPERIMENT_PATH + EXPERIMENT + EXTENSION_XML)
+        root = tree.getroot()
+        
+        for numberofExperiment in root: #id of experiment
+            if int(numberofExperiment.text) == experimentID:
+                for configtype in numberofExperiment: #agent, simulation..
+                    if configtype.tag == ID_AGENT: 
+                        for parameter in configtype: #learningrate, discount_factor .. 
+                            if parameter.tag == ID_DISCOUNT_FACTOR:
+                                self.discount_factor = float(parameter.text)
+                            elif parameter.tag == ID_LEARNING_RATE:
+                                self.learning_rate = float(parameter.text)
+                            elif parameter.tag == ID_EPISODES:
+                                self.episodes = int(parameter.text)
+                            elif parameter.tag == ID_EXPLORATION_RATE:
+                                self.exploration_rate = float(parameter.text)
+                            elif parameter.tag == ID_BATCH_SIZE:
+                                self.batch_size = int(parameter.text)
+                            elif parameter.tag == ID_ACTION_TYPE:
+                                self.action_type = int(parameter.text)
+                            elif parameter.tag == ID_REWARD_TYPE:
+                                self.reward_type = int(parameter.text)
+                            elif parameter.tag == ID_AGENT_TYPE:
+                                self.agent_type = parameter.text
+                            elif parameter.tag == ID_FOLDERNAME: 
+                                self.foldername = parameter.text
+        debug_print("ID "+ str(experimentID) + ": " + str(self.discount_factor)+str(self.learning_rate)+str(self.episodes)+str(self.exploration_rate)+str(self.batch_size)+str(self.action_type)+str(self.reward_type)+str(self.agent_type), DEBUG_CURRENT_EXPERIMENT)
+
+    def save_results(self):
+
+        #writing the file
+        text = ""
+        for loglist,name  in zip(self.allResultsToLog,self.namesofResults):
+            text += name + "=" + str(loglist) + "\n"
+            
+        myFile = open(EXPERIMENT_PATH + self.foldername + "//results.txt", "w") #"a" = append
+        myFile.write(text)
+        myFile.close()
