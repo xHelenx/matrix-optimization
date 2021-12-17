@@ -6,11 +6,12 @@ import json
 import os
 from datetime import datetime
 from time import sleep
-import re 
-from globalConstants import COMMAND_ACTION_MOVE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, DEBUG_COMMAND, DEBUG_CURRENT_EXPERIMENT, DEBUG_FILECREATION, \
-DEBUG_VALID_ACTION, EXPERIMENT, EXPERIMENT_PATH, ID_ACTION_TYPE, ID_AGENT, ID_AGENT_TYPE, ID_BATCH_SIZE, ID_CURRENTID, ID_DISCOUNT_FACTOR, ID_EPISODES, ID_EXPLORATION_RATE, ID_FOLDERNAME, ID_LEARNING_RATE, ID_PROCTIME, ID_REWARD_TYPE, ID_TERMINAL, ID_THROUGHPUTPERHOUR, ID_TOTALTIME, PATH, EVENT_CONFIG,EVENT_REWARD, \
+import re
+
+from globalConstants import COMMAND_ACTION_MOVE, COMMAND_EVALUATION_DONE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, EVENT_INFO, EXPERIMENT, ID_ACTION_TYPE, ID_AGENT, ID_AGENT_TYPE, ID_BATCH_SIZE, ID_CURRENTID, ID_DISCOUNT_FACTOR, ID_EPISODES, ID_EXPLORATION_RATE, ID_FOLDERNAME, ID_LEARNING_RATE, ID_PROCTIME, ID_REWARD_TYPE, ID_TERMINAL, ID_THROUGHPUTPERHOUR, ID_TOTALTIME, EVENT_CONFIG,EVENT_REWARD, \
 EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
-ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, DEBUG_WARNING, SLEEP_TIME
+ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, SLEEP_TIME
+from dynamicConfigurations import  DEBUG_COMMAND, DEBUG_CURRENT_EXPERIMENT, DEBUG_FILECREATION, DEBUG_VALID_ACTION, DEBUG_WARNING, EXPERIMENT_PATH, FILE_PATH
 
 class DataExchanger:
     def __init__(self):
@@ -44,6 +45,7 @@ class DataExchanger:
         self.rewardProperties = dict() #e.g.  {"througput":10, ... } 
         self.received_state = False
         self.received_reward = False
+        self.received_info = False
         self.machines = list()
         self.totalMachine = 0
         self.terminal = False
@@ -71,9 +73,15 @@ class DataExchanger:
         self.validActions = [] 
         self.totalTime = []
 
-        self.allResultsToLog = [self.returns, self.totalSteps, self.validActions, self.totalTime]
-        self.namesofResults  = ["returns", "totalSteps", "validActions", "totalTime"]
+        self.returnsEvaluation = [] 
+        self.totalStepsEvaluation = [] 
+        self.validActionsEvaluation = [] 
+        self.totalTimeEvaluation = []
+
+        self.allResultsToLog = [self.returns, self.totalSteps, self.validActions, self.totalTime, self.returnsEvaluation, self.totalStepsEvaluation, self.validActionsEvaluation, self.totalTimeEvaluation]
+        self.namesofResults  = ["returns", "totalSteps", "validActions", "totalTime", "returnsEvaluation", "totalStepsEvaluation", "validActionsEvaluation", "totalTimeEvaluation"]
         
+
 
         
     def map_state_to_key(self):
@@ -114,7 +122,7 @@ class DataExchanger:
         is_readable = False
         while not is_readable:
                 try:
-                    tree = ET.parse( PATH + event + EXTENSION_XML)
+                    tree = ET.parse( FILE_PATH + event + EXTENSION_XML)
                     root = tree.getroot()
                     is_readable = True
                 except:
@@ -125,14 +133,14 @@ class DataExchanger:
         if event == EVENT_CONFIG:
             self.read_config(root)
             self.delete_file(event)
-            while os.path.exists(PATH + event + EXTENSION_XML):
+            while os.path.exists(FILE_PATH + event + EXTENSION_XML):
                 pass
 
         #EVENT_STATE
         elif event == EVENT_STATE:
             self.read_state(root)
             self.delete_file(event)
-            while os.path.exists(PATH + event + EXTENSION_XML):
+            while os.path.exists(FILE_PATH + event + EXTENSION_XML):
                 pass
             self.received_state = True
 
@@ -140,9 +148,17 @@ class DataExchanger:
         elif event == EVENT_REWARD:
             self.read_reward(root)
             self.delete_file(event)
-            while os.path.exists(PATH + event + EXTENSION_XML):
+            while os.path.exists(FILE_PATH + event + EXTENSION_XML):
                 pass
             self.received_reward = True
+        
+        #EVENT_INFO
+        elif event == EVENT_INFO:
+            self.delete_file(event)
+            while os.path.exists(FILE_PATH + event + EXTENSION_XML):
+                pass
+            self.received_info = True
+        
         
     def delete_file(self, event):
         '''
@@ -156,7 +172,7 @@ class DataExchanger:
         is_deletable = False
         while not is_deletable:
             try:
-                os.remove(PATH + event + EXTENSION_XML)
+                os.remove(FILE_PATH + event + EXTENSION_XML)
                 is_deletable = True
             except:
                 debug_print("File is in use, cannot delete file", DEBUG_FILECREATION)
@@ -194,14 +210,8 @@ class DataExchanger:
                                 raise ValueError("Unknown value for ID_PARTTYPE")
                         elif property.tag == ID_REMAININGPROCTIME:
                             if property.text == "-1": 
-                                property.text = "0:0:0.0"
-                            elif property.text.count(":") == 0 : #adapt format
-                                property.text = "0:0:" + property.text
-                            elif property.text.count(":") == 1: 
-                                property.text = "0:" + property.text
-                            timeval = datetime.strptime(property.text, "%H:%M:%S.%f")
-                            totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
-                            machine_properties.update({ID_REMAININGPROCTIME:totalseconds})
+                                property.text = "0"
+                            machine_properties.update({ID_REMAININGPROCTIME:int(float(property.text))})
                         else:
                             raise ValueError("Unknown property type")
                         self.state.update({component.tag:machine_properties})
@@ -221,13 +231,7 @@ class DataExchanger:
             if metric.tag == ID_THROUGHPUTPERHOUR:
                 self.rewardProperties.update({ID_THROUGHPUTPERHOUR:float(metric.text)})
             if metric.tag == ID_TOTALTIME:   
-                if metric.text.count(":") == 0 : #adapt format
-                    metric.text = "0:0:" + metric.text
-                elif metric.text.count(":") == 1: 
-                    metric.text = "0:" + metric.text
-                timeval = datetime.strptime(metric.text, "%H:%M:%S.%f")
-                totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
-                self.totalTimeThisEpisode = totalseconds
+                self.totalTimeThisEpisode = int(float(metric.text))
             if metric.tag == ID_TERMINAL:
                 if metric.text == "true":
                     self.terminal = True
@@ -261,13 +265,7 @@ class DataExchanger:
                     for dest in src:
                         for property in dest:
                             if property.tag == ID_PROCTIME:
-                                if property.text.count(":") == 0 : #adapt format
-                                    property.text = "0:0:" + property.text
-                                elif property.text.count(":") == 1: 
-                                    property.text = "0:" + property.text
-                                timeval = datetime.strptime(property.text, "%H:%M:%S.%f")
-                                totalseconds = timeval.second + timeval.minute*60 + timeval.hour*3600
-                                property_val = totalseconds
+                                property_val = int(float(property.text))
                         dest_dict.update({dest.tag:property_val})
                         if not dest.tag in self.machines:
                             self.machines.append(dest.tag) 
@@ -303,6 +301,8 @@ class DataExchanger:
             child_command.text = COMMAND_SETUP_DONE
         elif commandtype == COMMAND_TRAINING_DONE:
             child_command.text = COMMAND_TRAINING_DONE
+        elif commandtype == COMMAND_EVALUATION_DONE:
+            child_command.text = COMMAND_EVALUATION_DONE
         elif commandtype == COMMAND_ACTION_MOVE:
             child_command.text = COMMAND_ACTION_MOVE
             child_source = ET.SubElement(root,"source")
@@ -324,19 +324,19 @@ class DataExchanger:
         #write string to .temp file and rename it to ensure that the file 
         #is complete before the simulation starts reading
         finishedText = self.format_output(root)
-        if os.path.exists(PATH + EVENT_COMMAND + EXTENSION_TEMP):
-            os.remove(PATH + EVENT_COMMAND + EXTENSION_TEMP)
+        if os.path.exists(FILE_PATH + EVENT_COMMAND + EXTENSION_TEMP):
+            os.remove(FILE_PATH + EVENT_COMMAND + EXTENSION_TEMP)
             
-        myFile = open(PATH + EVENT_COMMAND + EXTENSION_TEMP, "w") #"a" = append
+        myFile = open(FILE_PATH + EVENT_COMMAND + EXTENSION_TEMP, "w") #"a" = append
         myFile.write(finishedText)
         myFile.close()
 
-        while os.path.exists(PATH + EVENT_COMMAND + EXTENSION_XML):
+        while os.path.exists(FILE_PATH + EVENT_COMMAND + EXTENSION_XML):
             pass
         
-        os.rename(PATH + EVENT_COMMAND + EXTENSION_TEMP, PATH + EVENT_COMMAND + EXTENSION_XML)
-        if os.path.exists(PATH + EVENT_COMMAND + EXTENSION_XML):
-            debug_print(PATH + EVENT_COMMAND + EXTENSION_XML, DEBUG_FILECREATION)
+        os.rename(FILE_PATH + EVENT_COMMAND + EXTENSION_TEMP, FILE_PATH + EVENT_COMMAND + EXTENSION_XML)
+        if os.path.exists(FILE_PATH + EVENT_COMMAND + EXTENSION_XML):
+            debug_print(FILE_PATH + EVENT_COMMAND + EXTENSION_XML, DEBUG_FILECREATION)
 
         
     def define_action_space(self): 
@@ -370,7 +370,7 @@ class DataExchanger:
         if not isValid:
             return -1
         else:
-            return self.rewardProperties[ID_THROUGHPUTPERHOUR] +1 #+1 just for now, because in the beginning itis 0 for a while
+            return 10*self.rewardProperties[ID_THROUGHPUTPERHOUR] + 20 #+1 just for now, because in the beginning itis 0 for a while
     
     def is_valid_action(self,action):
         '''

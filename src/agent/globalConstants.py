@@ -3,31 +3,18 @@ import sys
 #--- time between checking availability of file
 SLEEP_TIME = 0.005
 
-#--- set print debug messages
-DEBUG_FILECREATION = True
-DEBUG_COMMAND = True
-DEBUG_STATES = False
-DEBUG_EPISDOE = False
-DEBUG_VALID_ACTION = False 
-DEBUG_WARNING = False
-DEBUG_CURRENT_EXPERIMENT = True
-
 #--- command types
 COMMAND_RESET = "reset"
 COMMAND_ACTION_MOVE = "move"
 COMMAND_SETUP_DONE = "done"
 COMMAND_TRAINING_DONE = "training done"
-
-#--- File constants
-PATH =r"A:\\"  #sys.argv[1] #e.g #"A:/" #r"E:\\Bachelorarbeit\\src\\simulation\\" 
-EXPERIMENT_PATH = r"E:\\Bachelorarbeit\\src\\experiments\\" 
-EXPERIMENT = "experiment"
-
+COMMAND_EVALUATION_DONE = "evaluation done"
 
 EVENT_STATE = "state"
 EVENT_COMMAND = "command"
 EVENT_REWARD = "reward"
 EVENT_CONFIG = "config"
+EVENT_INFO = "info"
 LOGFILE = "logfile"
 EXTENSION_XML = ".xml"
 EXTENSION_TEMP = ".temp"

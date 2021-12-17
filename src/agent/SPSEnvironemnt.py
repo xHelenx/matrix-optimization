@@ -3,7 +3,8 @@ import os
 import numpy as np
 from time import sleep
 from DataExchanger import DataExchanger
-from globalConstants import  COMMAND_ACTION_MOVE, DEBUG_COMMAND, DEBUG_STATES, EVENT_COMMAND, EXTENSION_XML, debug_print, SLEEP_TIME
+from globalConstants import  COMMAND_ACTION_MOVE, debug_print, SLEEP_TIME
+from dynamicConfigurations import  DEBUG_COMMAND 
 
 class SPSEnvironmnet(Environment):
     def __init__(self):
@@ -31,11 +32,11 @@ class SPSEnvironmnet(Environment):
         self.dataEx.terminal = False
         return np.zeros(shape=(1,), dtype=np.int)
     
-    def max_episode_timesteps(self):
-        '''
-        defines maximal time steps per episode
-        '''
-        return 100000
+    #def max_episode_timesteps(self):
+    #    '''
+    #    defines maximal time steps per episode
+    #    '''
+    #    return 50000
     def reward(self):
         '''
         Define reward as numerical value, init 0    

@@ -3,10 +3,7 @@ import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import itertools
-from globalConstants import EXPERIMENT_PATH
-
-#TODO iwo einmalig Pfade legen? 
-#EXPERIMENT_PATH = r"E:\\Bachelorarbeit\\src\\experiments\\" #TODO all adaptable paths on top
+from dynamicConfigurations import EXPERIMENT_PATH
 
 class ExperimentCreator: 
     def __init__(self):
@@ -14,36 +11,37 @@ class ExperimentCreator:
         Add variable to agent or simulation, then choose if it is dynamic or static 
         
         '''
+        #TODO show more specifc which values may be changed + ranges
         #list of all agent related params
-        #
+        
         #dynamic
-        self.discount_factors  = {"discount_factor":[0.3, 0.5, 0.99]}
-        self.learning_rates    = {"learning_rate":[0.005,0.01,0.1]}
-        self.episodes          = {"episodes":[400]}
+        self.discount_factors  = {"discount_factor":[0.99]} #0.3,0.5
+        self.learning_rates    = {"learning_rate":[0.005]} #0.005, 0.1
+        self.episodes          = {"episodes":[200]}
         #self.max_timesteps     = {"max_timesteps": [10.000]}
-        self.exploration_rates = {"exploration_rate": [0,0.001,0.1]}
-        self.batch_sizes       = {"batch_size":[1,10]} 
+        self.exploration_rates = {"exploration_rate": [0]} #.001,0.1
+        self.batch_sizes       = {"batch_size":[1]} #10 
+        self.reward_type = {"reward_type" : [1]}
+        self.action_type = {"action_type" : [1]}
+        self.agent_type  = {"agent_type"  : ["ppo", "random"]}
 
-        temp_dyn      = [self.discount_factors,self.learning_rates,self.episodes,self.exploration_rates,self.batch_sizes]
+
+        temp_dyn      = [self.discount_factors,self.learning_rates,self.episodes,self.exploration_rates,self.batch_sizes, self.reward_type, self.action_type, self.agent_type]
         self.agent_param_dyn = dict()
 
         for elem in temp_dyn:
             self.agent_param_dyn.update(elem)
 
         #statics  
-        self.reward_type = {"reward_type" : 1}
-        self.action_type = {"action_type" : 1}
-        self.agent_type  = {"agent_type"  : "ppo"}
+        #temp_stat      = [self.reward_type, self.action_type, self.agent_type]
+        #self.agent_param_stat = dict()
 
-        temp_stat      = [self.reward_type, self.action_type, self.agent_type]
-        self.agent_param_stat = dict()
-
-        for elem in temp_stat:
-            self.agent_param_stat.update(elem)
+        #for elem in temp_stat:
+        #    self.agent_param_stat.update(elem)
 
 
         #list of all simulation related parameter
-        self.demands          = {"demand": [10,300]} 
+        self.demands          = {"demand": [10,200]} 
 
         temp =  [self.demands]
         self.simulation_params = dict()
@@ -64,6 +62,7 @@ class ExperimentCreator:
             #one dict for agent, one for env..
 
         hypnames, hypvalues = zip(*self.hyper_params.items())
+        print(hypvalues)
         grid_hyperparam = [dict(zip(hypnames, h)) for h in itertools.product(*hypvalues)]
         
         self.create_experiment_file(grid_hyperparam)
@@ -97,10 +96,10 @@ class ExperimentCreator:
                 child_params.text = str(experiments[id][key])
                 foldername = foldername + key + "-" + str(experiments[id][key]) + "-"
             
-            for key in self.agent_param_stat.keys():  
-                child_params = ET.SubElement(child_agent,key)
-                child_params.text = str(self.agent_param_stat[key])
-                foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
+            #for key in self.agent_param_stat.keys():  
+            #    child_params = ET.SubElement(child_agent,key)
+            #    child_params.text = str(self.agent_param_stat[key])
+            #    foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
             
             id += 1
             
@@ -144,10 +143,10 @@ class ExperimentCreator:
             foldername = foldername + key + "-" + str(experiment[key]) + "-"
         
 
-        for key in self.agent_param_stat.keys():  
-            child_params = ET.SubElement(child_agent,key)
-            child_params.text = str(self.agent_param_stat[key])
-            foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
+        #for key in self.agent_param_stat.keys():  
+        #    child_params = ET.SubElement(child_agent,key)
+        #    child_params.text = str(self.agent_param_stat[key])
+        #    foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
                    
         finishedText = self.format_output(root)
         
