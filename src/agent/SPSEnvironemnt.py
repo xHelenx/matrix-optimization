@@ -56,7 +56,7 @@ class SPSEnvironmnet(Environment):
 
             debug_print(str(actions) + ": \t invalid", DEBUG_COMMAND)
 
-            next_state, reward = [self.dataEx.map_state_to_key()], self.dataEx.calculate_reward(False) #state does not change, terminal, punish invalid action
+            next_state, reward = [self.dataEx.map_state_to_key()], self.dataEx.calculate_reward(actions) #state does not change, terminal, punish invalid action
             return next_state, self.dataEx.terminal, reward
         else:
             #Action is valid: send action, get reward, get state 
@@ -71,7 +71,7 @@ class SPSEnvironmnet(Environment):
             self.dataEx.received_reward = False
 
             #calculate reward according to reward properties, update terminal
-            reward = self.dataEx.calculate_reward(True) 
+            reward = self.dataEx.calculate_reward(actions) 
             
             debug_print(self.dataEx.terminal, DEBUG_COMMAND)
             #wait for new state 

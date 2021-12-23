@@ -8,7 +8,7 @@ COMMAND_RESET = "reset"
 COMMAND_ACTION_MOVE = "move"
 COMMAND_SETUP_DONE = "done"
 COMMAND_TRAINING_DONE = "training done"
-COMMAND_EVALUATION_DONE = "evaluation done"
+COMMAND_EXPERIMENT_DONE = "experiment done"
 
 EVENT_STATE = "state"
 EVENT_COMMAND = "command"
@@ -50,6 +50,7 @@ ID_REWARD_TYPE  = "reward_type"
 ID_ACTION_TYPE  = "action_type"
 ID_AGENT_TYPE   = "agent_type"
 ID_FOLDERNAME   = "foldername"
+ID_ANALYSIS_TYPE = "analysis_type"
 
 
 def debug_print(message, type):

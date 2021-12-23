@@ -8,9 +8,10 @@ from datetime import datetime
 from time import sleep
 import re
 
-from globalConstants import COMMAND_ACTION_MOVE, COMMAND_EVALUATION_DONE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, EVENT_INFO, EXPERIMENT, ID_ACTION_TYPE, ID_AGENT, ID_AGENT_TYPE, ID_BATCH_SIZE, ID_CURRENTID, ID_DISCOUNT_FACTOR, ID_EPISODES, ID_EXPLORATION_RATE, ID_FOLDERNAME, ID_LEARNING_RATE, ID_PROCTIME, ID_REWARD_TYPE, ID_TERMINAL, ID_THROUGHPUTPERHOUR, ID_TOTALTIME, EVENT_CONFIG,EVENT_REWARD, \
+
+from globalConstants import COMMAND_ACTION_MOVE, COMMAND_EXPERIMENT_DONE, COMMAND_RESET, COMMAND_SETUP_DONE, COMMAND_TRAINING_DONE, EVENT_INFO, EXPERIMENT, ID_ACTION_TYPE, ID_AGENT, ID_AGENT_TYPE, ID_BATCH_SIZE, ID_CURRENTID, ID_DISCOUNT_FACTOR, ID_EPISODES, ID_EXPLORATION_RATE, ID_FOLDERNAME, ID_LEARNING_RATE, ID_PROCTIME, ID_REWARD_TYPE, ID_TERMINAL, ID_THROUGHPUTPERHOUR, ID_TOTALTIME, EVENT_CONFIG,EVENT_REWARD, \
 EVENT_COMMAND,EVENT_STATE, EXTENSION_XML,EXTENSION_TEMP, ID_OCCUPIED, \
-ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, SLEEP_TIME
+ID_PARTTYPE, ID_REMAININGPROCTIME, NODE_IDENTIFIER, NONE, PARTA, PARTB, debug_print, SLEEP_TIME, ID_ANALYSIS_TYPE
 from dynamicConfigurations import  DEBUG_COMMAND, DEBUG_CURRENT_EXPERIMENT, DEBUG_FILECREATION, DEBUG_VALID_ACTION, DEBUG_WARNING, EXPERIMENT_PATH, FILE_PATH
 
 class DataExchanger:
@@ -65,6 +66,7 @@ class DataExchanger:
         self.agent_type = -1
         self.agent_type = ""
         self.foldername = ""
+        self.analysis_type = ""
         
 
         ##---- result values to log
@@ -301,8 +303,8 @@ class DataExchanger:
             child_command.text = COMMAND_SETUP_DONE
         elif commandtype == COMMAND_TRAINING_DONE:
             child_command.text = COMMAND_TRAINING_DONE
-        elif commandtype == COMMAND_EVALUATION_DONE:
-            child_command.text = COMMAND_EVALUATION_DONE
+        elif commandtype == COMMAND_EXPERIMENT_DONE:
+            child_command.text = COMMAND_EXPERIMENT_DONE
         elif commandtype == COMMAND_ACTION_MOVE:
             child_command.text = COMMAND_ACTION_MOVE
             child_source = ET.SubElement(root,"source")
@@ -358,7 +360,7 @@ class DataExchanger:
                         self.actions.update({i:(parttype,source,dest)}) #add possible action to action space
                         i += 1
 
-    def calculate_reward(self, isValid): #TODO: add switch for different reward functions
+    def calculate_reward(self, action): #TODO: add switch for different reward functions
         '''
         calculates the reward for the chosen action
 
@@ -367,11 +369,29 @@ class DataExchanger:
         @precondition  - action was performed
         @postcondition - %
         '''
-        if not isValid:
-            return -1
+        isValid = self.is_valid_action(action)
+        isMovedToDrain = self.moved_to_drain(action)
+        if self.reward_type == "mayer":   
+            reward = 0 
+            if not isValid:
+                return -5       #punish invalid action
+            elif isMovedToDrain:
+                reward += 20    #reward finishing product
+            return int(reward + self.totalTimeThisEpisode/100) #stress agent to finish fast, by using current running time as punishment
+        elif self.reward_type == "simple":
+            if not isValid:
+                return -1
+            else:
+                return int(10*self.rewardProperties[ID_THROUGHPUTPERHOUR] + 20) #+1 just for now, because in the beginning itis 0 for a while
+    def moved_to_drain(self,action):
+        #parttype = 0
+        #source = 1
+        destination = 2
+        if "Drain" in action[destination]:
+            return True
         else:
-            return 10*self.rewardProperties[ID_THROUGHPUTPERHOUR] + 20 #+1 just for now, because in the beginning itis 0 for a while
-    
+            return False 
+
     def is_valid_action(self,action):
         '''
         An action is valid, if 
@@ -454,20 +474,26 @@ class DataExchanger:
                             elif parameter.tag == ID_ACTION_TYPE:
                                 self.action_type = int(parameter.text)
                             elif parameter.tag == ID_REWARD_TYPE:
-                                self.reward_type = int(parameter.text)
+                                self.reward_type = parameter.text
                             elif parameter.tag == ID_AGENT_TYPE:
                                 self.agent_type = parameter.text
                             elif parameter.tag == ID_FOLDERNAME: 
                                 self.foldername = parameter.text
+                            elif parameter.tag == ID_ANALYSIS_TYPE:
+                                self.analysis_type = parameter.text
         debug_print("ID "+ str(experimentID) + ": " + str(self.discount_factor)+str(self.learning_rate)+str(self.episodes)+str(self.exploration_rate)+str(self.batch_size)+str(self.action_type)+str(self.reward_type)+str(self.agent_type), DEBUG_CURRENT_EXPERIMENT)
 
     def save_results(self):
-
+        
         #writing the file
         text = ""
         for loglist,name  in zip(self.allResultsToLog,self.namesofResults):
-            text += name + "=" + str(loglist) + "\n"
-            
-        myFile = open(EXPERIMENT_PATH + self.foldername + "//results.txt", "w") #"a" = append
+            if not loglist == []:
+                text += name + "=" + str(loglist) + "\n"
+
+        if self.analysis_type == "training":  
+            myFile = open(EXPERIMENT_PATH + self.foldername + "//resultsTrain.txt", "w") #"a" = append
+        elif self.analysis_type == "evaluation":
+            myFile = open(EXPERIMENT_PATH + self.foldername + "//resultsEval.txt", "w") #"a" = append
         myFile.write(text)
         myFile.close()
