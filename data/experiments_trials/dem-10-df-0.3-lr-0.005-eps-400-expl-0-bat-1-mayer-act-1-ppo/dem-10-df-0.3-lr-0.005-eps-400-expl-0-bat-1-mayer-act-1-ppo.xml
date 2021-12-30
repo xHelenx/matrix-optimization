@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<configuration>
+  <simulation>
+    <demand>10</demand>
+  </simulation>
+  <agent>
+    <discount_factor>0.3</discount_factor>
+    <learning_rate>0.005</learning_rate>
+    <episodes>400</episodes>
+    <exploration_rate>0</exploration_rate>
+    <batch_size>1</batch_size>
+    <reward_type>1</reward_type>
+    <action_type>1</action_type>
+    <agent_type>ppo</agent_type>
+  </agent>
+</configuration>

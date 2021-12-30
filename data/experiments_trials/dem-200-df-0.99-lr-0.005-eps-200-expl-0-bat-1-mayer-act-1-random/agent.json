@@ -1,0 +1,1 @@
+{"agent": "random", "states": {"type": "int", "shape": [1], "num_values": 1023}, "actions": {"type": "int", "shape": [1], "num_values": 21}, "max_episode_timesteps": 25000, "config": null, "recorder": null, "internals": {}, "initial_internals": {}}
