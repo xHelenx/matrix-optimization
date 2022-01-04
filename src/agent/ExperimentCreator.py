@@ -1,4 +1,3 @@
-
 import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -11,17 +10,17 @@ class ExperimentCreator:
         Add variable to agent or simulation, then choose if it is dynamic or static 
         
         '''
-        #TODO show more specifc which values may be changed + ranges
-        #list of all agent related params
-        
-        self.discount_factors  = {"df":[0.99]} #0.3,0.5
-        self.learning_rates    = {"lr":[0.001]} #0.005, 0.1
-        self.episodes          = {"eps":[100]}
+      
+
+        #dynamic
+        self.discount_factors  = {"discount_factor":[0.99]} #0.3,0.5
+        self.learning_rates    = {"learning_rate":[0.001]} #0.005, 0.1
+        self.episodes          = {"episodes":[100]}
         #self.max_timesteps     = {"max_timesteps": [10.000]}
-        self.exploration_rates = {"expl": [0, 0.01]} #.001,0.1
-        self.batch_sizes       = {"bat":[1]} #10 
+        self.exploration_rates = {"exploration_rate": [0, 0.01]} #.001,0.1
+        self.batch_sizes       = {"batch_size":[1]} #10 
         self.reward_type = {"reward_type" : ["mayer","mayer_-_100_-5","mayer_-_10000_-5","mayer_-_10000_-25_"]}
-        self.action_type = {"act" : [1]}
+        self.action_type = {"action_type" : [1]}
         self.agent_type  = {"agent_type"  : ["ppo"]}
         self.analysis_type = {"analysis_type":["training" , "evaluation"]} #ORDER IS MANDATORY, otherwise eval agent but not trained model present
 
@@ -32,8 +31,16 @@ class ExperimentCreator:
         for elem in temp_dyn:
             self.agent_param_dyn.update(elem)
 
+        #statics  
+        #temp_stat      = [self.reward_type, self.action_type, self.agent_type]
+        #self.agent_param_stat = dict()
+
+        #for elem in temp_stat:
+        #    self.agent_param_stat.update(elem)
+
+
         #list of all simulation related parameter
-        self.demands          = {"dem": [100]} 
+        self.demands          = {"demand": [100]} 
 
         temp =  [self.demands]
         self.simulation_params = dict()
@@ -86,11 +93,8 @@ class ExperimentCreator:
                 #print(key,experiments[id][key])
                 child_params = ET.SubElement(child_agent,key)
                 child_params.text = str(experiments[id][key])
- 
-                if key == "agent_type"  or  key ==  "reward_type" :
-                    foldername = foldername  + str(experiments[id][key]) + "-"
-                elif key == "analysis_type":
-                    pass
+                if experiments[id][key] == "evaluation":
+                    foldername = foldername + key + "-" + "training"+ "-" #no extra folder for evaluation
                 else:
                     foldername = foldername + key + "-" + str(experiments[id][key]) + "-"
             
@@ -133,21 +137,16 @@ class ExperimentCreator:
                 #print(key,experiment[key])
                 child_params = ET.SubElement(child_sim,key)
                 child_params.text = str(experiment[key])
-                foldername = foldername + key + str(experiment[key]) + "-"
+                foldername = foldername + key + "-" + str(experiment[key]) + "-"
             
             child_agent = ET.SubElement(root,"agent")
             for key in self.agent_param_dyn.keys():  
                 #print(key,experiment[key])
                 child_params = ET.SubElement(child_agent,key)
                 child_params.text = str(experiment[key])
-                if key == "agent_type"  or  key ==  "reward_type" :
-                    foldername = foldername  + str(experiment[key]) + "-"
-                elif key == "analysis_type":
-                    pass
-                else:
-                    foldername = foldername + key + "-" + str(experiment[key]) + "-"
+                foldername = foldername + key + "-" + str(experiment[key]) + "-"
             
-               
+
             #for key in self.agent_param_stat.keys():  
             #    child_params = ET.SubElement(child_agent,key)
             #    child_params.text = str(self.agent_param_stat[key])
