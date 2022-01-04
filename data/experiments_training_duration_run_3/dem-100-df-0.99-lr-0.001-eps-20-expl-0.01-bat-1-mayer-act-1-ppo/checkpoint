@@ -1,0 +1,4 @@
+model_checkpoint_path: "agent-0"
+all_model_checkpoint_paths: "agent-0"
+all_model_checkpoint_timestamps: 1640618240.7779999
+last_preserved_timestamp: 1640266318.9439647
