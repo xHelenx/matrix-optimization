@@ -97,6 +97,12 @@ if __name__ ==  "__main__":
                                 exploration = env.dataEx.exploration_rate, \
                                 learning_rate = env.dataEx.learning_rate, discount = env.dataEx.discount_factor, batch_size = env.dataEx.batch_size,
                                 saver=dict(directory=EXPERIMENT_PATH + env.dataEx.foldername, frequency=25, max_checkpoints=2))
+        if env.dataEx.agent_type == "ddqn":
+            agent = Agent.create(agent=env.dataEx.agent_type, \
+                                environment = env, \
+                                exploration = env.dataEx.exploration_rate, \
+                                learning_rate = env.dataEx.learning_rate, discount = env.dataEx.discount_factor, batch_size = env.dataEx.batch_size,
+                                saver=dict(directory=EXPERIMENT_PATH + env.dataEx.foldername, frequency=25, max_checkpoints=2))
 
         elif env.dataEx.agent_type == "random":
             agent = Agent.create(agent=env.dataEx.agent_type, \
