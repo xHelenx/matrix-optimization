@@ -7,21 +7,31 @@ from dynamicConfigurations import EXPERIMENT_PATH
 class ExperimentCreator: 
     def __init__(self):
         '''
-        Add variable to agent or simulation, then choose if it is dynamic or static 
-        
+        How to create your experiment: 
+        You can change the following parameters:
+        - discount factor 
+        - learning rate
+        - episode 
+        - exploration rate 
+        - batch size
+        - reward type 
+        - agent type 
+        - demand
+
+        by adding values to list inside the dictionary.
         '''
       
-
+            
         #dynamic
-        self.discount_factors  = {"discount_factor":[0.99]} #0.3,0.5
+        self.discount_factors  = {"discount_factor":[0.5,0.99]} #0.3,0.5
         self.learning_rates    = {"learning_rate":[0.001]} #0.005, 0.1
-        self.episodes          = {"episodes":[100]}
+        self.episodes          = {"episodes":[100]} 
         #self.max_timesteps     = {"max_timesteps": [10.000]}
         self.exploration_rates = {"exploration_rate": [0, 0.01]} #.001,0.1
         self.batch_sizes       = {"batch_size":[1]} #10 
-        self.reward_type = {"reward_type" : ["mayer","mayer_-_100_-5","mayer_-_10000_-5","mayer_-_10000_-25_"]}
+        self.reward_type = {"reward_type" : ["mayer_-_10000_-5"]}
         self.action_type = {"action_type" : [1]}
-        self.agent_type  = {"agent_type"  : ["ppo"]}
+        self.agent_type  = {"agent_type"  : ["ppo", "ddqn"]} #choose from ppo, ddqn
         self.analysis_type = {"analysis_type":["training" , "evaluation"]} #ORDER IS MANDATORY, otherwise eval agent but not trained model present
 
 
@@ -30,14 +40,6 @@ class ExperimentCreator:
 
         for elem in temp_dyn:
             self.agent_param_dyn.update(elem)
-
-        #statics  
-        #temp_stat      = [self.reward_type, self.action_type, self.agent_type]
-        #self.agent_param_stat = dict()
-
-        #for elem in temp_stat:
-        #    self.agent_param_stat.update(elem)
-
 
         #list of all simulation related parameter
         self.demands          = {"demand": [100]} 
