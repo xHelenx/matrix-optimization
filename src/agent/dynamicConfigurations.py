@@ -2,7 +2,7 @@
 
 #--- File constants
 FILE_PATH            = r"A:\\" #path to where the xmls required for configurations shall be written, NOTE: has to be the same path as specified in SPS
-EXPERIMENT_PATH = r"E:\\Bachelorarbeit\\src\\experiments\\" 
+EXPERIMENT_PATH = r"E:\\Bachelorarbeit\\src\\experiments\\"  
 
 
 #--- set print debug messages

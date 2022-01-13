@@ -9,7 +9,6 @@ from dynamicConfigurations import  DEBUG_COMMAND
 class SPSEnvironmnet(Environment):
     def __init__(self):
         super().__init__()
-        #terminal func or var?
         self.dataEx = DataExchanger()
         self.cnt = 0
     
@@ -36,7 +35,8 @@ class SPSEnvironmnet(Environment):
     #    '''
     #    defines maximal time steps per episode
     #    '''
-    #    return 50000
+    #    return 25000
+
     def reward(self):
         '''
         Define reward as numerical value, init 0    

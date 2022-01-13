@@ -68,13 +68,14 @@ if __name__ ==  "__main__":
         os.remove(FILE_PATH + LOGFILE + EXTENSION_LOG)
     except:
         pass
-
+ 
     #set up logging file
     logging.basicConfig(filename=FILE_PATH + LOGFILE + EXTENSION_LOG, encoding='utf-8', level=logging.DEBUG)
     debug_print(FILE_PATH,DEBUG_FILECREATION)
     
+    max_steps = 25000
     print("Creating environment...")
-    env = Environment.create(environment=SPSEnvironmnet(), max_episode_timesteps=25000)
+    env = Environment.create(environment=SPSEnvironmnet(), max_episode_timesteps=max_steps)
     print("...done")
 
     #load current experiment configurations
@@ -97,11 +98,12 @@ if __name__ ==  "__main__":
                                 exploration = env.dataEx.exploration_rate, \
                                 learning_rate = env.dataEx.learning_rate, discount = env.dataEx.discount_factor, batch_size = env.dataEx.batch_size,
                                 saver=dict(directory=EXPERIMENT_PATH + env.dataEx.foldername, frequency=25, max_checkpoints=2))
-        if env.dataEx.agent_type == "ddqn":
+        elif env.dataEx.agent_type == "ddqn":
             agent = Agent.create(agent=env.dataEx.agent_type, \
                                 environment = env, \
                                 exploration = env.dataEx.exploration_rate, \
                                 learning_rate = env.dataEx.learning_rate, discount = env.dataEx.discount_factor, batch_size = env.dataEx.batch_size,
+                                memory = env.dataEx.batch_size + max_steps + 10, \
                                 saver=dict(directory=EXPERIMENT_PATH + env.dataEx.foldername, frequency=25, max_checkpoints=2))
 
         elif env.dataEx.agent_type == "random":

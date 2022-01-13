@@ -17,6 +17,7 @@ from dynamicConfigurations import  DEBUG_COMMAND, DEBUG_CURRENT_EXPERIMENT, DEBU
 class DataExchanger:
     def __init__(self):
         '''
+        #- 
         workplan            -  includes the processing steps per item type in the following format: {Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
         state               -  holds the last transmited state of the simulation
         action              -  dict of all possible actions in this simulation setup, format: {{Parttype:{src:dest}}..}
@@ -28,17 +29,36 @@ class DataExchanger:
         totalMachine        - number indicating the amount of machines
         terminal            - boolean indicating the end of an episode 
         
-        ##--- 
+        ##variables for hyperparameter tuning, read from experiment list
+        #explained in detail in "Experimenta", Annex B
         discount_factor     - 
         learning_rate       -
         episode             -
-        max_timesteps       -
         exploration_rate    -
         batch_size          -   
         reward_type         - 
         action_type         -
         agent_type          -
         agent_type          -
+        self.foldername     -
+        self.analysis_type  -
+        
+
+        ##--Chosen key performance indicator
+        #explained in detail in "Experiments", Annex B 
+        self.returns    - given reward for entire episode during training
+        self.totalSteps     - number of tried actions (possible) during training
+        self.validActions   - number of performed actions (valid) during training
+        self.totalTime  - final simulation time of episode during training
+
+        self.returnsEvaluation  - given reward for entire episode during evaluation
+        self.totalStepsEvaluation   - number of tried actions (possible) during evaluation
+        self.validActionsEvaluation     - number of performed actions (valid) during evaluation
+        self.totalTimeEvaluation    - final simulation time of episode during evaluation
+
+        self.allResultsToLog    - currently chosen KPIs, 
+        self.namesofResults     - given names for chosen KPIs for results file
+        
         '''
         self.workplan = dict() #{Parttype:{ProcessingStep:{{machine_src: {{machine_dest:totalproctime}}}}} 
         self.state = dict() #{Machine}:{Occupation:true|false, RemainingProcTime:float,PartType:string}}
@@ -58,7 +78,6 @@ class DataExchanger:
         self.discount_factor   = -1
         self.learning_rate = -1
         self.episodes   = -1
-        self.max_timesteps = -1
         self.exploration_rate  = -1
         self.batch_size    = -1
         self.reward_type    = -1
@@ -391,14 +410,14 @@ class DataExchanger:
                 return -5       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward + self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
-        elif self.reward_type == "mayer_-_10000_-25_":   
+            return int(reward - self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
+        elif self.reward_type == "mayer_-_10000_-25":  
             reward = 0 
             if not isValid:
                 return -25       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward + self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
+            return int(reward - self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
         
         
         
