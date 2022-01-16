@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<configuration>
+  <simulation>
+    <demand>100</demand>
+  </simulation>
+  <agent>
+    <analysis_type>training</analysis_type>
+    <discount_factor>0.99</discount_factor>
+    <learning_rate>0.001</learning_rate>
+    <episodes>100</episodes>
+    <exploration_rate>0.01</exploration_rate>
+    <batch_size>1</batch_size>
+    <reward_type>mayer_-_100_-5</reward_type>
+    <action_type>1</action_type>
+    <agent_type>ppo</agent_type>
+  </agent>
+</configuration>
