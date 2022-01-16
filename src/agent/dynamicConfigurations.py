@@ -1,8 +1,8 @@
 
 
 #--- File constants
-FILE_PATH            = r"A:\\" #path to where the xmls required for configurations shall be written, NOTE: has to be the same path as specified in SPS
-EXPERIMENT_PATH = r"E:\\Bachelorarbeit\\src\\experiments\\"  
+FILE_PATH            = r"E:\\matrix-optimization-RLAgent\\src\\communication\\" #path to where the xmls required for configurations shall be written, NOTE: has to be the same path as specified in SPS
+EXPERIMENT_PATH = r"E:\\matrix-optimization-RLAgent\\src\\experiments\\"  
 
 
 #--- set print debug messages

@@ -396,29 +396,49 @@ class DataExchanger:
                 return -5       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward + self.totalTimeThisEpisode/100) #stress agent to finish fast, by using current running time as punishment
+            return int(reward + self.totalTimeThisEpisode/100) 
         elif self.reward_type == "mayer_-_100_-5":   
             reward = 0 
             if not isValid:
                 return -5       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward - self.totalTimeThisEpisode/100) #stress agent to finish fast, by using current running time as punishment
+            return int(reward - self.totalTimeThisEpisode/100) 
         elif self.reward_type == "mayer_-_10000_-5":   
             reward = 0 
             if not isValid:
                 return -5       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward - self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
+            return int(reward - self.totalTimeThisEpisode/10000) 
         elif self.reward_type == "mayer_-_10000_-25":  
             reward = 0 
             if not isValid:
                 return -25       #punish invalid action
             elif isMovedToDrain:
                 reward += 20    #reward finishing product
-            return int(reward - self.totalTimeThisEpisode/10000) #stress agent to finish fast, by using current running time as punishment
-        
+            return int(reward - self.totalTimeThisEpisode/10000) 
+        elif self.reward_type == "mayer_+_100_-5":   
+            reward = 0 
+            if not isValid:
+                return -5       #punish invalid action
+            elif isMovedToDrain:
+                reward += 20    #reward finishing product
+            return int(reward + self.totalTimeThisEpisode/100) 
+        elif self.reward_type == "mayer_+_10000_-5":   
+            reward = 0 
+            if not isValid:
+                return -5       #punish invalid action
+            elif isMovedToDrain:
+                reward += 20    #reward finishing product
+            return int(reward + self.totalTimeThisEpisode/10000) 
+        elif self.reward_type == "mayer_+_10000_-25":  
+            reward = 0 
+            if not isValid:
+                return -25       #punish invalid action
+            elif isMovedToDrain:
+                reward += 20    #reward finishing product
+            return int(reward + self.totalTimeThisEpisode/10000)         
         
         
         

@@ -2,39 +2,45 @@ import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import itertools
-from dynamicConfigurations import EXPERIMENT_PATH
+from dynamicConfigurations import  EXPERIMENT_PATH
 
 class ExperimentCreator: 
     def __init__(self):
         '''
         How to create your experiment: 
-        You can change the following parameters:
-        - discount factor 
-        - learning rate
-        - episode 
-        - exploration rate 
-        - batch size
-        - reward type 
-        - agent type 
-        - demand
+        You can change the following parameters within the shown range 
+        - discount factor   [0,1]                                                                 
+        - learning rate     (0,1]
+        - episode           [1,inf] (dramatically increases computation time, max tested is 400)
+        - exploration rate  [0,1]
+        - batch size        [1,inf] (needs to be smaller than episodes)
+        - reward type       {"mayer","mayer_-_100_-5","mayer_-_10000_-5","mayer_-_10000_-25", "mayer_+_100_-5","mayer_+_10000_-5","mayer_+_10000_-25"}
+        - agent type        {"ppo", "ddqn"}
+        - demand  (line 52) [1,inf] (drasticall increases computation time, max tests is 100)
 
         by adding values to list inside the dictionary.
+        Examples are given behind each parameter.
+        After editing the configurations, run "GenerateExperiments.py". 
+        Also refer to chapter 6 of Annex A, as it explains the setup of experiments.
+        
         '''
-      
-            
+      #-------> HERE    
         #dynamic
-        self.discount_factors  = {"discount_factor":[0.5,0.99]} #0.3,0.5
-        self.learning_rates    = {"learning_rate":[0.001]} #0.005, 0.1
-        self.episodes          = {"episodes":[100]} 
-        #self.max_timesteps     = {"max_timesteps": [10.000]}
-        self.exploration_rates = {"exploration_rate": [0, 0.01]} #.001,0.1
-        self.batch_sizes       = {"batch_size":[1]} #10 
-        self.reward_type = {"reward_type" : ["mayer_-_10000_-5"]}
-        self.action_type = {"action_type" : [1]}
-        self.agent_type  = {"agent_type"  : ["ppo", "ddqn"]} #choose from ppo, ddqn
-        self.analysis_type = {"analysis_type":["training" , "evaluation"]} #ORDER IS MANDATORY, otherwise eval agent but not trained model present
-
-
+        self.discount_factors  = {"discount_factor":[0.99]} #[0.3,0.5,0.99]
+        self.learning_rates    = {"learning_rate":[0.001]} #[0.005, 0.001, 0.1]
+        self.episodes          = {"episodes":[100]} #[20,100,150]
+        self.exploration_rates = {"exploration_rate": [0, 0.01]} #[]0, 0.001,0.1]
+        self.batch_sizes       = {"batch_size":[1]} # [1,10] 
+        self.reward_type = {"reward_type" : ["mayer_+_10000_-5",]} 
+        #["mayer","mayer_-_100_-5","mayer_-_10000_-5","mayer_-_10000_-25"]
+        self.action_type = {"action_type" : [1]} #extendible in the future
+        self.agent_type  = {"agent_type"  : ["ppo"]} #["ppo", "ddqn"]
+        
+        
+        
+        
+        
+        self.analysis_type = {"analysis_type":["training" , "evaluation"]} #ORDER IS MANDATORY
         temp_dyn      = [self.analysis_type, self.discount_factors,self.learning_rates,self.episodes,self.exploration_rates,self.batch_sizes, self.reward_type, self.action_type, self.agent_type]
         self.agent_param_dyn = dict()
 
@@ -42,6 +48,7 @@ class ExperimentCreator:
             self.agent_param_dyn.update(elem)
 
         #list of all simulation related parameter
+    #-------> HERE 
         self.demands          = {"demand": [100]} 
 
         temp =  [self.demands]
@@ -71,7 +78,6 @@ class ExperimentCreator:
             #print(grid_hyperparam[id])
             self.write_experiment_to_file(grid_hyperparam[id])
 
-    #TODO delete old config`?`
     def create_experiment_file(self, experiments):
         #writing the file of experiments
         root = ET.Element("experiments")
@@ -87,34 +93,22 @@ class ExperimentCreator:
                 #print(key,experiments[id][key])
                 child_params = ET.SubElement(child_sim,key)
                 child_params.text = str(experiments[id][key])
-                foldername = foldername + key + "-" + str(experiments[id][key]) + "-"
-
+               
             
             child_agent = ET.SubElement(child_ID,"agent")
             for key in self.agent_param_dyn.keys():  
                 #print(key,experiments[id][key])
                 child_params = ET.SubElement(child_agent,key)
                 child_params.text = str(experiments[id][key])
-                if experiments[id][key] == "evaluation":
-                    foldername = foldername + key + "-" + "training"+ "-" #no extra folder for evaluation
-                else:
-                    foldername = foldername + key + "-" + str(experiments[id][key]) + "-"
-            
-            #for key in self.agent_param_stat.keys():  
-            #    child_params = ET.SubElement(child_agent,key)
-            #    child_params.text = str(self.agent_param_stat[key])
-            #    foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
-            
-            id += 1
-            
+              
+
             child_foldername = ET.SubElement(child_agent,"foldername")
-            child_foldername.text = foldername
-            
+            child_foldername.text = self.get_foldername(experiments[id])
+            id += 1
         
         finishedText = self.format_output(root)
         
         
-        #print(EXPERIMENT_PATH)
         myFile = open(EXPERIMENT_PATH + "experiment.xml", "w") #"a" = append
         myFile.write(finishedText)
         myFile.close()
@@ -139,26 +133,26 @@ class ExperimentCreator:
                 #print(key,experiment[key])
                 child_params = ET.SubElement(child_sim,key)
                 child_params.text = str(experiment[key])
-                foldername = foldername + key + "-" + str(experiment[key]) + "-"
-            
+                
             child_agent = ET.SubElement(root,"agent")
             for key in self.agent_param_dyn.keys():  
                 #print(key,experiment[key])
                 child_params = ET.SubElement(child_agent,key)
                 child_params.text = str(experiment[key])
-                foldername = foldername + key + "-" + str(experiment[key]) + "-"
-            
-
-            #for key in self.agent_param_stat.keys():  
-            #    child_params = ET.SubElement(child_agent,key)
-            #    child_params.text = str(self.agent_param_stat[key])
-            #    foldername = foldername + key + "-" + str(self.agent_param_stat[key]) + "-"
+               
                     
             finishedText = self.format_output(root)
-            
+            foldername = self.get_foldername(experiment)
             os.mkdir(EXPERIMENT_PATH + foldername)
             myFile = open(EXPERIMENT_PATH  + foldername + "//" + foldername + ".xml", "w") #"a" = append
             myFile.write(finishedText)
             myFile.close()
         elif experiment["analysis_type"] == "evaluation": 
             pass
+
+    def get_foldername(self, currentExperiment):
+        return "dem-" + str(currentExperiment["demand"]) + "-df-" + str(currentExperiment["discount_factor"]) + \
+                "-lr-" + str(currentExperiment["learning_rate"]) + "-eps-" + str(currentExperiment["episodes"]) + \
+                "-expl-" + str(currentExperiment["exploration_rate"]) + "-bat-" + str(currentExperiment["batch_size"]) + \
+                "-" + str(currentExperiment["reward_type"]) + "-act-" +str(currentExperiment["action_type"]) +\
+                "-" + str(currentExperiment["agent_type"])
