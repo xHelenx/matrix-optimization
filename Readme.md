@@ -6,7 +6,7 @@ Departamento Ingenería Informática, Ciencia de la Computacíon e Inteligencia 
 
 --------
 
-## Description: 
+## Description
 
 This work focuses on investigating strategies to solve a Flexible Job Shop Problem scheduling problem regarding a Flexible Manufacturing System and developing a Reinforcment Learning based prototype as proof of concept to show optimization possibilities of hyperparameter tuning. <br>
 
