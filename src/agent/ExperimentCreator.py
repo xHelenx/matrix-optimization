@@ -125,8 +125,6 @@ class ExperimentCreator:
         if experiment["analysis_type" ] == "training":
 
             root = ET.Element("configuration")
-            foldername = ""
-            #print(experiment)
 
             child_sim = ET.SubElement(root,"simulation")
             for key in self.simulation_params.keys():  
@@ -144,7 +142,7 @@ class ExperimentCreator:
             finishedText = self.format_output(root)
             foldername = self.get_foldername(experiment)
             os.mkdir(EXPERIMENT_PATH + foldername)
-            myFile = open(EXPERIMENT_PATH  + foldername + "//" + foldername + ".xml", "w") #"a" = append
+            myFile = open(EXPERIMENT_PATH  + foldername + "//agent_config.xml", "w") #"a" = append
             myFile.write(finishedText)
             myFile.close()
         elif experiment["analysis_type"] == "evaluation": 
