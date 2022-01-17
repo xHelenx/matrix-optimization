@@ -22,7 +22,7 @@ In the practical section a prototype is built, than can be seen as demonstration
     📦data
     ┣ 📂experiments_training_duration_run_1
     ┃ ┣ 📂dem-100-df-0.99-lr-0.001-eps-20-expl-0.001-bat-1-mayer-act-1-ppo
-    ┃ ┃ ┣ 📜agent-0.data-00000-of-00001
+    ┃ ┃ ┣ c
     ┃ ┃ ┣ 📜agent-0.index
     ┃ ┃ ┣ 📜agent.json
     ┃ ┃ ┣ 📜checkpoint
@@ -30,6 +30,13 @@ In the practical section a prototype is built, than can be seen as demonstration
     ┃ ┃ ┗ 📜results.txt
     ┃ ┣ 📂[...]
     ┣ 📂[...]
+    📦documentation
+    ┣ 📂pdfs
+    ┃ ┣ 📜report.pdf
+    ┃ ┣ 📜annex_A.pdf
+    ┃ ┗ 📜annex_B.pdf
+    ┣ 📂texfiles
+    ┃ ┗[...]
     📦src
     ┣ 📂simulation
     ┃ ┣ 📜simulation_models.spp
@@ -44,11 +51,13 @@ In the practical section a prototype is built, than can be seen as demonstration
     ┃ ┣ 📜GenerateExperiments.py
     ┃ ┗ 📜dynamicConfigurations.py
     ┣ 📂experiments
-    #################################################### !!!EXAMPLE EXPERIMENT
+    ┃ ┃ ┣ 📂dem-100-df-0.99-lr-0.001-eps-100-expl-0.01-bat-1-mayer_+_10000_-5-act-1-ppo
+    ┃ ┃ ┣ 📂dem-100-df-0.99-lr-0.001-eps-100-expl-0-bat-1-mayer_+_10000_-5-act-1-ppo
+    ┃ ┃ ┗ 📜experiment.txt
     ┣ 📂communication
     ┣ 📂analysis
-    ┃ ┣ 📜plotter.ipynb
-    #################################################### !!!!DOKU
+    ┃ ┗ 📜plotter.ipynb
+    📜Readme.md
 
     
 ---
