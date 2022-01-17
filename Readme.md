@@ -74,4 +74,4 @@ Siemens Plant Simulation suggests the following minimal requirements:
         
 Since the software performs a lot of writing and reading commands as well as a computational heavy algorithm, it is recommended to use a computer with at least a 8GB RAM. 
 
-For information about the installation, please refer to chapter 5 of Annex A.
+For information about the installation, please refer to chapter 6 of Annex A.
